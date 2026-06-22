@@ -1,0 +1,101 @@
+ROS 2 Topics Published by My Publisher
+Overview
+
+This document outlines the ROS 2 topics published by my custom publisher in the morosai_mini_ws. These topics are designed for controlling and monitoring an autonomous robot (AGV). The topics include the robot's goals, obstacles detected, navigation status, pose, and velocity.
+
+Published Topics
+
+/agv_act
+
+Message Type: Custom message (probably a JSON-like format or a custom ROS message).
+
+Content: Provides information about the goals for the robot.
+
+Example:
+
+data: {"goals": [], "goal_count": 0, "status": "IDLE"}
+
+
+Note: The goals list is empty, and the status is "IDLE", which indicates that the robot is not navigating at the moment.
+
+Then it becomes:
+data: '{"goals": [{"x": 1.202480435371399, "y": -1.1081570386886597, "theta": -1.0243211895037407, "frame_id": "map"}], "goal_count": 1...'
+---
+
+/agv_detect
+
+Message Type: Custom message (obstacle detection data).
+
+Content: This topic provides information about obstacles detected in the robot's environment.
+
+Example:
+
+data: {"obstacle_detected": true, "obstacle_cell_count": 2739, "obstacle_ratio": 0.7608, "resolution": 0.050, "width": 6.0}
+
+
+Note: This indicates that an obstacle was detected with a significant portion of the grid (obstacle ratio of 76%).
+
+/agv_op
+
+Message Type: Custom message (operation status).
+
+Content: Reports the current operation status of the robot, such as whether it is navigating or idle.
+
+Example:
+
+data: {"status": "NAVIGATING", "command": "GOTO", "is_navigating": true, "is_idle": false, "has_goals": true}
+
+
+Note: This shows that the robot is navigating to a goal.
+
+/agv_path
+
+Message Type: Custom message (path data).
+
+Content: Provides the path the robot is following, defined by poses in the map frame.
+
+Example:
+
+data: {"frame_id": "map", "poses": [{"x": 0.13, "y": 0.19, "theta": -0.785}, {"x": 0.2, "y": 0.25, "theta": 0.0}]}
+
+
+Note: A sequence of poses that define the path taken by the robot.
+
+/agv_pose
+
+Message Type: Pose message (robot's current pose).
+
+Content: This topic would provide the current pose of the robot, but it is currently empty because the pose is not yet available.
+
+Example:
+
+data: <No data available>
+
+
+/agv_qr
+
+Message Type: QR code detection message.
+
+Content: This topic would provide information about QR code detections, but currently, no data is being published because the optical sensor has not been tested yet.
+
+Example:
+
+data: <No data available>
+
+
+/agv_v
+
+Message Type: Float (velocity data).
+
+Content: Provides the current velocity of the robot.
+
+Example:
+
+data: 0.018578356131911278
+
+
+Note: The robot's velocity is reported as a constant value in this example, likely representing the robot's current speed.
+
+Conclusion
+
+The topics listed above are the primary data streams that the robot's publisher is handling. Some topics, like /agv_pose and /agv_qr, currently show no data because those sensors or functionalities are not yet active or tested. The system is currently reporting obstacle detection and navigation status, which are essential for robot operation.

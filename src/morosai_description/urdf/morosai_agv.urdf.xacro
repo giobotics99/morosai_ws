@@ -1,0 +1,288 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="morosai_agv">
+
+    <xacro_arg name="is_ignition" default="true" />
+    
+    <!-- Include Gazebo parameters -->
+    <xacro:include filename="$(find morosai_description)/urdf/morosai_agv_gazebo.xacro"/>
+
+    <!-- ROS2 Control -->
+    <xacro:include filename="$(find morosai_description)/urdf/morosai_agv_ros2_control.xacro"/>
+
+    <!-- Definizione delle dimensioni principali -->
+    <xacro:property name="base_length" value="0.500"/>  <!-- Lunghezza 500 mm -->
+    <xacro:property name="base_width" value="0.390"/>   <!-- Larghezza 390 mm --> 
+    <xacro:property name="wheel_radius" value="0.05"/>  <!-- Raggio stimato della ruota -->
+
+    <link name="base_footprint"/>
+
+    <!-- BASE LINK: parallelepipedo -->
+    <link name="base_link">
+        <inertial> 
+            <origin xyz="0 0 0.11" rpy="0 0 0"/>
+            <mass value="27.508"/>
+            <inertia 
+                ixx="4.2886"
+                ixy="-0.010736"
+                ixz="0.0051891"
+                iyy="8.2711"
+                iyz="-0.00085023"
+                izz="4.2714"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0.11"/>
+            <geometry>
+                <box size="0.5 0.39 0.22"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0.0 0.2 1.0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.11"/>
+            <geometry>
+                <box size="0.5 0.39 0.22"/>
+            </geometry> 
+        </collision>
+    </link>
+
+    <joint name="base_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin rpy="0 0 0" xyz="0 0 0.04"/>
+    </joint>
+
+    <!-- SENSORS -->
+    <link name="tof_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.05 0.05 0.05"/>
+            </geometry>
+            <material name="green">
+                <color rgba="0.0 1.0 0.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="tof_camera_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="tof_link"/>
+        <!-- CONFIG CNR STIIMA UPSIDE DOWN -->
+        <!-- <origin xyz="0.25 0 0.186" rpy="0 -1.5708 3.14159"/> -->
+         <!-- INGEL CONFIG MINI AV  -->
+        <origin xyz="0.25 0 0.186" rpy="0 1.5708 0"/>
+    </joint>
+
+    
+    <link name="tof_optical_frame"/>
+
+    <joint name="tof_optical_joint" type="fixed">
+        <parent link="tof_link"/>
+        <child link="tof_optical_frame"/>
+        <!-- <origin xyz="0 0 0" rpy="0 0 3.14159"/> -->
+        <origin xyz="0 0 0" rpy="0 0 1.5708"/>
+    </joint>
+
+    <!-- ==== LIDAR FRONT ==== -->
+    <link name="lidar_front_link">
+    <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+        <cylinder radius="0.0375" length="0.04"/>
+        </geometry>
+        <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+        </material>
+    </visual>
+    </link>
+
+    <!--
+    Diametralmente opposto significa che il rear avrà x,y con segno opposto.
+    Qui front è a ( +0.2731, +0.306, +0.260 ) e yaw = pi (3.14159),
+    come nel tuo esempio.
+    -->
+    <joint name="lidar_front_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_front_link"/>
+    <!-- <origin xyz="0.2731 0.306 0.260" rpy="0 0 3.14159"/> -->
+    <origin xyz="0.2931 0.246 0.260" rpy="0 0 3.14159"/>  <!-- configurazione MINI AGV -->
+    </joint>
+
+
+    <!-- ==== LIDAR REAR ==== -->
+    <link name="lidar_rear_link">
+    <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+        <cylinder radius="0.0375" length="0.04"/>
+        </geometry>
+        <material name="red"/>
+    </visual>
+    </link>
+
+    <!--
+    Rear diametralmente opposto: (-0.2731, -0.306, 0.260)
+    Per “guardare” verso il retro, metti yaw = 0 (in contrapposizione al front che hai ruotato di pi)
+    Nota: per un 2D lidar la rotazione attorno a z non influisce sullo scan, ma è bene essere coerenti.
+    -->
+    <joint name="lidar_rear_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_rear_link"/>
+    <origin xyz="-0.2731 -0.306 0.260" rpy="0 0 0"/>
+    </joint>
+
+    <!-- <joint name="lidar_rear_joint" type="fixed">
+        <parent link="base_link"/>
+        <child  link="lidar_rear_link"/>
+        <origin xyz="1.1565 1.0137 0.260" rpy="0 0 -0.03104"/>
+    </joint> -->
+
+    <!-- WHEELS -->
+    <link name="wheel_front_right">
+        <inertial>
+            <origin xyz="0 -0.014 0" rpy="0 0 0"/>
+            <mass value="2.91"/>
+            <inertia 
+                ixx="0.00458012929964188"
+                ixy="-8.16206171695503E-07"
+                ixz="0.000741678448097534"
+                iyy="0.00561604136708303"
+                iyz="3.96551218314105E-06"
+                izz="0.00479467479360652"/>
+        </inertial>
+        <visual>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://morosai_description/meshes/NM175A-Ruota.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.05"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="wheel_front_right_joint" type="fixed"> 
+    <!-- CHECK perchè continous non si muove su rviz -->
+        <parent link="base_link"/>
+        <child link="wheel_front_right"/>
+        <origin rpy="0 0 0" xyz="0.25 -0.195 0.05"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <link name="wheel_front_left">
+        <inertial>
+            <origin xyz="0 -0.014 0" rpy="0 0 0"/>
+            <mass value="2.91"/>
+            <inertia 
+                ixx="0.0045801"
+                ixy="8.1621E-07"
+                ixz="-0.00074168"
+                iyy="0.005616"
+                iyz="3.9655E-06"
+                izz="0.0047947" />
+        </inertial>
+        <visual>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://morosai_description/meshes/NM175A-Ruota.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.05"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="wheel_front_left_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="wheel_front_left"/>
+        <origin rpy="0 0 0" xyz="0.25 0.195 0.05"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <link name="wheel_rear_right">
+        <inertial>
+            <origin xyz="0 -0.014 0" rpy="0 0 0"/>
+            <mass value="2.91"/>
+            <inertia 
+                ixx="0.00458012929965282"
+                ixy="-8.16206173013403E-07"
+                ixz="0.00074167844810129"
+                iyy="0.00561604136709717"
+                iyz="3.96551218697627E-06"
+                izz="0.00479467479361136" />
+        </inertial>
+        <visual>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://morosai_description/meshes/NM175A-Ruota.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.05"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="wheel_rear_right_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="wheel_rear_right"/>
+        <origin rpy="0 0 0" xyz="-0.25 -0.195 0.05"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <link name="wheel_rear_left">
+        <inertial>
+            <origin xyz="0 -0.014 0" rpy="0 0 0"/>
+            <mass value="2.91"/>
+            <inertia 
+                ixx="0.00458012929965168"
+                ixy="8.16206173575887E-07"
+                ixz="-0.000741678448102401"
+                iyy="0.00561604136709495"
+                iyz="3.96551218641184E-06"
+                izz="0.00479467479361022" />
+        </inertial>
+        <visual>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://morosai_description/meshes/NM175A-Ruota.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-1.57 0 0" xyz="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.05"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="wheel_rear_left_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="wheel_rear_left"/>
+        <origin rpy="0 0 0" xyz="-0.25 0.195 0.05"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+</robot>

@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  
+  <world name='world_demo'>
+  <gravity>0 0 -9.8</gravity>
+    <physics type='ode'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <max_contacts>100</max_contacts>
+    </physics>
+    <plugin
+          filename="libignition-gazebo-physics-system.so"
+          name="ignition::gazebo::systems::Physics">
+      </plugin>
+      <plugin
+          filename="libignition-gazebo-user-commands-system.so"
+          name="ignition::gazebo::systems::UserCommands">
+        </plugin>
+      <plugin
+          filename="libignition-gazebo-scene-broadcaster-system.so"
+          name="ignition::gazebo::systems::SceneBroadcaster">
+      </plugin>
+      <plugin
+        filename="libignition-gazebo-sensors-system.so"
+        name="ignition::gazebo::systems::Sensors">
+        <render_engine>ogre2</render_engine>
+      </plugin>
+      <plugin
+        filename="BasicSystem"
+        name="ros_gz_example_gazebo::BasicSystem">
+      </plugin>
+      <plugin
+        filename="FullSystem"
+        name="ros_gz_example_gazebo::FullSystem">
+      </plugin>
+
+
+
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>0.300000012 0.699999988 0.899999976 1</background>
+      <shadows>false</shadows>
+      <grid>true</grid>
+    </scene>
+    <magnetic_field>6.0000000000000002e-06 2.3e-05 -4.1999999999999998e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 20 -1.3 0 0.5</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.01 0.01 0.01 1</specular>
+      <intensity>2</intensity>
+      <visualize>false</visualize>
+    </light>
+
+
+    <model name='Depot'>
+      <static>false</static>
+      <link name='main'>
+        <collision name='collision'>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='MOROSAI_FEMA'>
+          <geometry>
+            <mesh>
+              <scale>0.59999999999999998 0.59999999999999998 0.59999999999999998</scale>
+              <uri>file:///home/giovi/Documents/MOROSAI_FEMA.stl</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+
+      <joint name='world_joint' type='fixed'>
+        <parent>world</parent>
+        <child>main</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+
+      <pose>7.1900899999999996 1.09982 0 0 0 0</pose>
+      <self_collide>false</self_collide>
+    </model>  
+
+    <!-- <model name="box">
+      <pose>5 5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+        </visual>
+      </link>
+    </model> -->
+
+    <model name="sweepe">
+      <self_collide>true</self_collide>
+      <pose>0 0 0.35 0 0 0</pose>
+      <include merge="true">
+        <uri>package://ros_gz_example_description/models/omni</uri>
+      </include>
+
+      <plugin
+        filename="ignition-gazebo-joint-state-publisher-system"
+        name="ignition::gazebo::systems::JointStatePublisher">
+      </plugin>
+
+      <plugin
+        filename="ignition-gazebo-pose-publisher-system"
+        name="ignition::gazebo::systems::PosePublisher">
+        <publish_link_pose>true</publish_link_pose>
+        <use_pose_vector_msg>true</use_pose_vector_msg>
+        <static_publisher>true</static_publisher>
+        <static_update_frequency>1</static_update_frequency>
+      </plugin>
+
+      <plugin
+        filename="ignition-gazebo-odometry-publisher-system"
+        name="ignition::gazebo::systems::OdometryPublisher">
+        <odom_frame>sweepe/odom</odom_frame>
+        <robot_base_frame>sweepe</robot_base_frame>
+      </plugin>
+    </model>
+
+
+  </world>
+</sdf>

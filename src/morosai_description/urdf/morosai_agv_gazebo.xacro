@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="morosai_agv">
+<!-- tags for joints better to insert them in another xml file! here -->
+
+    <gazebo reference="wheel_front_right">
+        <mu1>3.0</mu1>
+        <mu2>3.0</mu2>
+        <kp>10000.0</kp>
+        <kd>1.0</kd>
+        <maxVel>0.5</maxVel>
+        <!-- ruota destra: attrito primario “indietro” rispetto all’asse X del link -->
+        <fdir1>-1 0 0</fdir1>
+    </gazebo>
+    
+    <gazebo reference="wheel_front_left">
+        <mu1>3.0</mu1>
+        <mu2>3.0</mu2>
+        <kp>10000.0</kp>
+        <kd>1.0</kd>
+        <maxVel>0.5</maxVel>
+        <!-- ruota sinistra: attrito primario “in avanti” sull’asse X del link -->
+        <fdir1>1 0 0</fdir1>
+    </gazebo>
+    
+    <gazebo reference="wheel_rear_right">
+        <mu1>3.0</mu1>
+        <mu2>3.0</mu2>
+        <kp>10000.0</kp>
+        <kd>1.0</kd>
+        <maxVel>0.5</maxVel>
+        <fdir1>-1 0 0</fdir1>
+    </gazebo>
+    
+    <gazebo reference="wheel_rear_left">
+        <mu1>3.0</mu1>
+        <mu2>3.0</mu2>
+        <kp>10000.0</kp>
+        <kd>1.0</kd>
+        <maxVel>0.5</maxVel>
+        <fdir1>1 0 0</fdir1>
+    </gazebo>
+
+    <!-- <gazebo>
+        <xacro:if value="$(arg is_ignition)">
+            <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+                <parameters>$(find morosai_controller)/config/morosai_controllers.yaml</parameters>
+            </plugin>
+        </xacro:if>
+
+        <xacro:unless value="$(arg is_ignition)">
+            <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+                <parameters>$(find morosai_controller)/config/morosai_controllers.yaml</parameters>
+               
+            </plugin> 
+        </xacro:unless>
+    </gazebo> -->
+     <!-- <parameters>$(find morosai_controller)/config/morosai_mecanum_controllers.yaml</parameters> -->
+</robot>
+
+<!-- mu1 – coefficiente di attrito primario
+Rappresenta la componente tangenziale dell’attrito tra la superficie di rotolamento della ruota e il terreno. Valori più alti migliorano il grip (ad esempio su superfici lisce o inclinate), ma se eccessivi rendono la ruota “appiccicosa” e ne impediscono il libero rotolamento. Tipicamente si usano valori compresi tra 1.0 e 5.0.
+
+mu2 – coefficiente di attrito secondario
+Indica la componente laterale dell’attrito, cioè la resistenza allo scivolamento perpendicolare alla direzione di marcia. Serve a modellare il comportamento di “slittamento” laterale: anche questo parametro va mantenuto in un range moderato (1.0–5.0) per non vincolare troppo le ruote in fase di sterzata o di deriva.
+
+kp – costante di rigidità (spring stiffness)
+Definisce la forza con cui Gazebo respinge la penetrazione tra la ruota e il terreno, agendo come una molla lineare sul contatto. Un valore troppo basso provoca penetrazioni eccessive (ruote che “sprofondano” nel piano), mentre uno troppo alto può causare instabilità numerica o fastidiosi “scatti”. Valori ragionevoli si collocano intorno a 10 000–20 000.
+
+kd – costante di smorzamento (damping coefficient)
+Introdotta per dissipare l’energia del contatto ed evitare rimbalzi violenti. Questa costante controlla quanto rapidamente le oscillazioni del contatto vengono smorzate. Un valore molto alto rende il contatto troppo “ammortizzato” (ruota che sembra pesante), uno troppo basso può causare vibrazioni incontrollate. Un tipico range è 0.1–10.0.
+
+minDepth – profondità minima di penetrazione
+Stabilisce la profondità massima che Gazebo tollera prima di applicare la forza di risposta. In genere si imposta attorno a 0.001 m (1 mm), per bilanciare precisione e velocità di calcolo del solver dei contatti.
+
+maxVel – velocità massima di correzione
+Limita la velocità (in m/s) con cui il solver di contatto può muovere la geometria della ruota per correggere le penetrazioni oltre minDepth. Un valore troppo alto può provocare comportamenti non fisici, un valore troppo basso influisce sulla stabilità numerica. Spesso si usa intorno a 0.1–0.5 m/s.
+
+fdir1 – direzione primaria dell’attrito (friction direction)
+È un vettore (x y z) espresso nel frame del link della ruota che indica la direzione lungo cui opera il coefficiente di attrito primario mu1. Deve essere perpendicolare all’asse di rotazione del giunto (nel tuo caso l’asse Y) e parallelo al piano di marcia.
+
+    Per le ruote sul lato destro, usa -1 0 0 (perché la rotazione positiva delle ruote destra in avanti corrisponde a un verso negativo di X).
+
+    Per le ruote sul lato sinistro, usa 1 0 0. -->

@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="morosai_agv">
+    <!-- ros2_control config for morosai_agv with 4 mecanum wheels -->
+
+    <ros2_control name="MorosaiSystem" type="system">
+
+        <!-- For ROS 2 Humble (Ignition Gazebo) -->
+        <xacro:if value="$(arg is_ignition)">
+            <hardware>
+                <plugin>ign_ros2_control/IgnitionSystem</plugin>
+            </hardware>
+        </xacro:if>
+
+        <!-- For ROS 2 Jazzy (Gazebo Classic) -->
+        <xacro:unless value="$(arg is_ignition)">
+            <hardware>
+                <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+            </hardware>
+        </xacro:unless>
+
+        <!-- Front Right Wheel -->
+        <joint name="wheel_front_right_joint">
+            <command_interface name="velocity">
+                <param name="min">-1</param>
+                <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <!-- Front Left Wheel -->
+        <joint name="wheel_front_left_joint">
+            <command_interface name="velocity">
+                <param name="min">-1</param>
+                <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <!-- Rear Right Wheel -->
+        <joint name="wheel_rear_right_joint">
+            <command_interface name="velocity">
+                <param name="min">-1</param>
+                <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <!-- Rear Left Wheel -->
+        <joint name="wheel_rear_left_joint">
+            <command_interface name="velocity">
+                <param name="min">-1</param>
+                <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        
+    </ros2_control>
+
+    <!-- TRANSMISSIONS for mecanum wheels -->
+    <transmission name="front_right_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheel_front_right_joint">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_front_right">
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+        </transmission>
+    
+        <transmission name="front_left_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheel_front_left_joint">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_front_left">
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+        </transmission>
+        
+        <transmission name="rear_right_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheel_rear_right_joint">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_rear_right">
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+        </transmission>
+        
+        <transmission name="rear_left_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheel_rear_left_joint">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motor_rear_left">
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator> 
+    </transmission>
+    
+</robot>

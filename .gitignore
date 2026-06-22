@@ -1,0 +1,9 @@
+log/
+install/
+build/bag_all_try1_gordon3/
+build/
+.vscode
+venv/
+src/morosai_metrics/morosai_metrics/
+bag_ingel_out3/
+src/morosai_metrics/morosai_metrics.egg-info/

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morosai_metrics"
+version = "0.1.0"
+description = "A toolkit for analyzing and visualizing ROS2 navigation behavior for the Morosai project."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "typer",
+    "rich",
+    "matplotlib",
+    "numpy",
+    "scipy",
+]
+
+[project.scripts]
+morosai_metrics = "morosai_metrics.cli.main:app"

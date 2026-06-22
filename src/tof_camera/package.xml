@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>kea_camera</name>
+  <version>1.0.0</version>
+  <description>Ros node wrapper around kea camera</description>
+
+  <maintainer email="t.spil@chronoptics.com">Twan Spil</maintainer>
+
+  <license>GPLv2</license>
+
+  <url type="website">http://www.chronoptics.com</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>opencv</depend>
+
+  <build_depend>chronoptics</build_depend>
+  <exec_depend>chronoptics</exec_depend>
+
+  <build_depend>tof</build_depend>
+  <exec_depend>tof</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
