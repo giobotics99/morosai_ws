@@ -202,6 +202,6 @@ def generate_launch_description():
         nav_topic_publisher_node,
         collision_monitor_node,
         lifecycle_manager_safety,
-        # apriltag_node
+        apriltag_node
         # rviz_node
     ])

@@ -126,6 +126,7 @@ class MqttBridgePublisher(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Subscriptions
+        self.create_subscription(String, '/align_result', self._align_result_cb, 10)
         self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self._amcl_pose_cb, qos_reliable)
         # Nav2 global planner publishes /plan as TRANSIENT_LOCAL — must use
         # matching QoS or ROS2 silently drops the subscription (VOLATILE is
@@ -701,6 +702,13 @@ class MqttBridgePublisher(Node):
         self._current_goals = []
         self._goal_handle = None
 
+    def _align_result_cb(self, msg: String):
+        """Callback per aggiornare lo stato quando l'allineamento è completato."""
+        if msg.data == "SUCCESS":
+            self._agv_operation["status"] = "ALIGNED"
+            self._nav_info = "Target aligned successfully"
+            self.get_logger().info("Stato aggiornato a ALIGNED via MQTT")
+            
     def _publish_nav_status(self):
         """
         Publish /nav_status at 1 Hz — navigation state machine.
