@@ -171,6 +171,16 @@ def generate_launch_description():
     )
 
     # ============================================================
+    # 4d. Map Updater Node
+    # ============================================================
+    map_updater_node = Node(
+        package='morosai_navigation',
+        executable='map_updater_node.py',
+        name='map_updater_node',
+        output='screen'
+    )
+
+    # ============================================================
     # 5. RViz2 Visualization
     # ============================================================
     rviz_config_file = os.path.join(pkg_morosai_description, 'rviz', 'display_NAV2.rviz')
@@ -202,6 +212,7 @@ def generate_launch_description():
         nav_topic_publisher_node,
         collision_monitor_node,
         lifecycle_manager_safety,
-        apriltag_node
+        apriltag_node,
+        map_updater_node
         # rviz_node
     ])

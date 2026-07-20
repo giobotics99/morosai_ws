@@ -28,6 +28,7 @@ install(
     scripts/yolo_tof_detector.py
     scripts/tag_aligner_node.py
     scripts/tag_align_service.py
+    scripts/tag_dock_align_service.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

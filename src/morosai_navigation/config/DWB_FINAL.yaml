@@ -110,9 +110,10 @@ behavior_server:
     robot_base_frame: base_footprint
     transform_tolerance: 0.4
     use_sim_time: false
-    max_rotational_vel: 0.5
-    min_rotational_vel: 0.1
-    rotational_acc_lim: 0.4
+    # Limitazione drastica della rotazione di recupero dello chassis
+    max_rotational_vel: 0.15
+    min_rotational_vel: 0.05
+    rotational_acc_lim: 0.08
 
 controller_server:
   ros__parameters:
@@ -135,45 +136,92 @@ controller_server:
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
+    # FollowPath:
+    #   plugin: "dwb_core::DWBLocalPlanner"
+    #   debug_trajectory_details: True
+    #   min_vel_x: -0.3
+    #   min_vel_y: -0.1
+    #   max_vel_x: 0.5
+    #   max_vel_y: 0.1
+    #   max_vel_theta: 0.3
+    #   min_speed_xy: 0.02
+    #   max_speed_xy: 0.5
+    #   min_speed_theta: -0.3
+    #   acc_lim_x: 0.3
+    #   acc_lim_y: 0.1
+    #   acc_lim_theta: 0.3
+    #   decel_lim_x: -0.3
+    #   decel_lim_y: -0.1
+    #   decel_lim_theta: -0.3
+    #   vx_samples: 20
+    #   vy_samples: 5
+    #   vtheta_samples: 20
+    #   sim_time: 1.7
+    #   linear_granularity: 0.05
+    #   angular_granularity: 0.025
+    #   transform_tolerance: 0.4
+    #   xy_goal_tolerance: 0.25
+    #   trans_stopped_velocity: 0.1
+    #   short_circuit_trajectory_evaluation: True
+    #   stateful: True
+    #   critics: ["BaseObstacle", "ObstacleFootprintCritic", "RotateToGoal", "Oscillation", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+    #   ObstacleFootprintCritic.scale: 8.0
+    #   BaseObstacle.scale: 8.0
+    #   PathAlign.scale: 6.0
+    #   PathAlign.forward_point_distance: 0.3
+    #   GoalAlign.scale: 18.0
+    #   GoalAlign.forward_point_distance: 0.3
+    #   PathDist.scale: 3.0
+    #   GoalDist.scale: 10.0
+    #   RotateToGoal.scale: 5.0
+    #   RotateToGoal.slowing_factor: 5.0
+    #   RotateToGoal.lookahead_time: -1.0
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: -0.3
-      min_vel_y: -0.1
-      max_vel_x: 0.5
-      max_vel_y: 0.1
-      max_vel_theta: 0.3
-      min_speed_xy: 0.02
-      max_speed_xy: 0.5
-      min_speed_theta: -0.3
-      acc_lim_x: 0.3
-      acc_lim_y: 0.1
-      acc_lim_theta: 0.3
-      decel_lim_x: -0.3
-      decel_lim_y: -0.1
-      decel_lim_theta: -0.3
-      vx_samples: 20
+      # Velocità lineari ridotte ed eque per marcia avanti/indietro
+      min_vel_x: -0.20
+      max_vel_x: 0.25
+      # Mantenere a 0.0 se differenziale puro, altrimenti bassi valori se omni
+      min_vel_y: -0.05
+      max_vel_y: 0.05
+      # Rotazione molto lenta e controllata
+      max_vel_theta: 0.20
+      min_speed_xy: 0.01
+      max_speed_xy: 0.25
+      min_speed_theta: -0.20
+      # Rampe di accelerazione estremamente dolci (ridotte a 0.1 m/s²)
+      acc_lim_x: 0.10
+      acc_lim_y: 0.02
+      acc_lim_theta: 0.10
+      # Decelerazione controllata per non far sobbalzare la struttura da 265kg
+      decel_lim_x: -0.15
+      decel_lim_y: -0.02
+      decel_lim_theta: -0.15
+      # Incrementiamo i campionamenti temporali per traiettorie più stabili
+      vx_samples: 25
       vy_samples: 5
-      vtheta_samples: 20
-      sim_time: 1.7
-      linear_granularity: 0.05
-      angular_granularity: 0.025
+      vtheta_samples: 25
+      sim_time: 2.0 # Aumentato per guardare più avanti data la bassa velocità
+      linear_granularity: 0.03
+      angular_granularity: 0.02
       transform_tolerance: 0.4
-      xy_goal_tolerance: 0.25
-      trans_stopped_velocity: 0.1
+      xy_goal_tolerance: 0.10 # Tolleranza sul goal più stringente e precisa
+      yaw_goal_tolerance: 0.10
+      trans_stopped_velocity: 0.01
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["BaseObstacle", "ObstacleFootprintCritic", "RotateToGoal", "Oscillation", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      ObstacleFootprintCritic.scale: 8.0
-      BaseObstacle.scale: 8.0
-      PathAlign.scale: 6.0
+      ObstacleFootprintCritic.scale: 12.0 # Aumentato il peso degli ostacoli vicini
+      BaseObstacle.scale: 12.0
+      PathAlign.scale: 8.0
       PathAlign.forward_point_distance: 0.3
-      GoalAlign.scale: 18.0
+      GoalAlign.scale: 20.0
       GoalAlign.forward_point_distance: 0.3
-      PathDist.scale: 3.0
-      GoalDist.scale: 10.0
-      RotateToGoal.scale: 5.0
-      RotateToGoal.slowing_factor: 5.0
+      PathDist.scale: 4.0
+      GoalDist.scale: 12.0
+      RotateToGoal.scale: 8.0
+      RotateToGoal.slowing_factor: 7.0 # Frena in rotazione in modo molto più progressivo
       RotateToGoal.lookahead_time: -1.0
 
 
@@ -208,8 +256,7 @@ local_costmap:
       width: 5      # Increased from 3.0
       height: 5     # Increased from 3.0
       resolution: 0.05
-      # footprint: "[ [0.3, -0.25], [0.3, 0.25], [-0.3, 0.25], [-0.3, -0.25] ]"
-      footprint: "[ [0.45, -0.375], [0.45, 0.375], [-0.45, 0.375], [-0.45, -0.375] ]"
+      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
       transform_tolerance: 0.4
       plugins: ["static_layer", "stvl_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       denoise_layer:
@@ -278,8 +325,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: False
-      # footprint: "[ [0.3, -0.25], [0.3, 0.25], [-0.3, 0.25], [-0.3, -0.25] ]"
-      footprint: "[ [0.45, -0.375], [0.45, 0.375], [-0.45, 0.375], [-0.45, -0.375] ]"
+      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
       resolution: 0.05
       track_unknown_space: false
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -304,8 +350,25 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.0
-        inflation_radius: 0.9   # Increased from 0.55
+        inflation_radius: 1.3   # Increased from 0.55
       always_send_full_costmap: True
+
+# velocity_smoother:
+#   ros__parameters:
+#     use_sim_time: False
+#     smoothing_frequency: 20.0
+#     scale_velocities: true
+#     feedback: "CLOSED_LOOP"
+#     max_velocity: [0.5, 0.1, 0.3]
+#     min_velocity: [-0.3, -0.1, -0.3]
+#     deadband_velocity: [0.0, 0.0, 0.0]
+#     velocity_timeout: 1.0
+#     max_accel: [0.3, 0.1, 0.3]
+#     max_decel: [-0.3, -0.1, -0.3]
+#     odom_topic: "odom"
+#     odom_duration: 0.1
+#     use_realtime_priority: false
+#     enable_stamped_cmd_vel: false
 
 velocity_smoother:
   ros__parameters:
@@ -313,12 +376,14 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: true
     feedback: "CLOSED_LOOP"
-    max_velocity: [0.5, 0.1, 0.3]
-    min_velocity: [-0.3, -0.1, -0.3]
+    # Allineato ai limiti del DWB
+    max_velocity: [0.25, 0.05, 0.20]
+    min_velocity: [-0.20, -0.05, -0.20]
     deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 1.0
-    max_accel: [0.3, 0.1, 0.3]
-    max_decel: [-0.3, -0.1, -0.3]
+    velocity_timeout: 0.5
+    # Rampe di accelerazione/decelerazione identiche o leggermente inferiori al DWB
+    max_accel: [0.10, 0.02, 0.10]
+    max_decel: [-0.15, -0.02, -0.15]
     odom_topic: "odom"
     odom_duration: 0.1
     use_realtime_priority: false
@@ -343,7 +408,7 @@ collision_monitor:
     # 1. SLOWDOWN ZONE: Extends ~20cm past the physical footprint
     polygon_slow:
       type: "polygon"
-      points: [0.8, 0.75, 0.7, -0.75, -0.7, -0.75, -0.7, 0.75]
+      points: [0.856, 0.7825, 0.856, -0.7825, -0.856, -0.7825, -0.856, 0.7825]
       action_type: "slowdown"
       scale_factor: 0.9 # Reduces current velocity command to 20%
       max_points: 150     # Humble specific: Triggers if more than X points enter
@@ -354,7 +419,7 @@ collision_monitor:
     # 2. EMERGENCY STOP ZONE: Extends ~5cm past physical chassis for tight docking clearance
     polygon_stop:
       type: "polygon"
-      points: [0.65, 0.575, 0.65, -0.575, -0.65, -0.575, -0.65, 0.575]
+      points: [0.706, 0.6325, 0.706, -0.6325, -0.706, -0.6325, -0.706, 0.6325]
       action_type: "stop"
       max_points: 100     # Humble specific: Triggers if more than X points enter
       visualize: True

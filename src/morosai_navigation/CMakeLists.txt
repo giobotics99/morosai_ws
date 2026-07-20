@@ -52,6 +52,7 @@ install(
     scripts/mqtt_bridge_publisher.py
     scripts/bag_analysis_node.py
     scripts/extract_metrics.py
+    scripts/map_updater_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
