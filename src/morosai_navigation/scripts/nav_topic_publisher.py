@@ -182,16 +182,6 @@ class NavTopicPublisher(Node):
         self.agv_op_pub = self.create_publisher(String, '/agv_op', 10)
         
         # ============================================================
-        # SUBSCRIBER for operator commands (input)
-        # ============================================================
-        self.agv_op_cmd_sub = self.create_subscription(
-            String,
-            '/agv_op_CMD',
-            self.agv_op_cmd_callback,
-            qos_reliable
-        )
-        
-        # ============================================================
         # NAV2 Action Client for goal monitoring
         # ============================================================
         self._nav_action_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
@@ -398,33 +388,6 @@ class NavTopicPublisher(Node):
         
         # Immediately publish the update
         self.publish_agv_act()
-        
-    def agv_op_cmd_callback(self, msg: String):
-        """Handle incoming operator commands"""
-        try:
-            cmd = json.loads(msg.data)
-            self._agv_operation["command"] = cmd.get("command", None)
-            self._agv_operation["status"] = cmd.get("status", self._agv_operation["status"])
-            
-            # Handle specific commands
-            if cmd.get("command") == "STOP":
-                self._current_goals = []
-                self._agv_operation["status"] = "STOPPED"
-            elif cmd.get("command") == "PAUSE":
-                self._agv_operation["status"] = "PAUSED"
-            elif cmd.get("command") == "RESUME":
-                self._agv_operation["status"] = "NAVIGATING"
-            elif cmd.get("command") == "CLEAR_GOALS":
-                self._current_goals = []
-                self._agv_operation["status"] = "IDLE"
-                
-            # If waypoints are provided, update goals
-            if "waypoints" in cmd:
-                self._current_goals = cmd["waypoints"]
-                self._agv_operation["status"] = "NAVIGATING"
-                
-        except json.JSONDecodeError:
-            self.get_logger().warn(f"Invalid JSON in agv_op_CMD: {msg.data}")
         
     def publish_agv_act(self):
         """Publish agv_act - array of goal poses (JSON_POSE array)"""

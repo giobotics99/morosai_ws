@@ -93,6 +93,24 @@ def generate_launch_description():
     )
 
     # ============================================================
+    # 1b. Filter merged laser scan inside the robot footprint
+    # /merged is already expressed in base_footprint by the merger.
+    # ============================================================
+    laser_filter_node = Node(
+        package='laser_filters',
+        executable='scan_to_scan_filter_chain',
+        name='scan_to_scan_filter_chain',
+        output='screen',
+        parameters=[os.path.join(
+            pkg_morosai_navigation, 'config', 'laser_filters.yaml'
+        )],
+        remappings=[
+            ('scan', '/merged'),
+            ('scan_filtered', '/merged_filtered'),
+        ]
+    )
+
+    # ============================================================
     # 2. NAV2 Navigation Stack
     # ============================================================
     nav2_bringup_launch = IncludeLaunchDescription(
@@ -208,6 +226,7 @@ def generate_launch_description():
 
         # Launch components
         sensors_launch,
+        laser_filter_node,
         nav2_bringup_launch,
         nav_topic_publisher_node,
         collision_monitor_node,

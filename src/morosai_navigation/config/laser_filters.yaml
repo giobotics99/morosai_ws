@@ -1,0 +1,21 @@
+scan_to_scan_filter_chain:
+  ros__parameters:
+    filter_chain:
+      - name: robot_footprint_box_filter
+        type: laser_filters/LaserScanBoxFilter
+        params:
+          # /merged is already transformed by the merger into base_footprint.
+          box_frame: base_footprint
+          # Robot footprint from URDF/costmaps is approximately:
+          # x = +/-0.656 m, y = +/-0.5825 m.
+          # Add 4 cm margin to remove chassis returns reliably.
+          min_x: -0.696
+          max_x: 0.696
+          min_y: -0.6225
+          max_y: 0.6225
+          # Include the lidar/chassis height range, while leaving objects
+          # above the robot available to the 2D safety scan if present.
+          min_z: -0.05
+          max_z: 0.30
+          # false removes points inside the box.
+          invert: false

@@ -219,15 +219,11 @@ public:
             num = bs_short.to_ulong();
             agv_y_pos_des = (short)num;
 
+            
             // We get opposite values when we try the read the y-pos value from the colored and code strip.
             // So this is checking which strip that we're reading.
             if(agv_no_pos_des)
             agv_y_pos_des *= -1;
-
-            
-            
-            
-            
             
             // Get Tag ID from the byte array [Bytes 13-16]
             // unsigned long tag_id = 0;  // dichiarata prima del ciclo if
@@ -303,9 +299,10 @@ public:
             pmsg.color_lane_count = agv_c_lane_count_des;
             pmsg.no_color_lane = agv_no_color_lane_des;
             pmsg.no_pos = agv_no_pos_des;
-            // pmsg.tag_detected = tag_detected_des;
-            // pmsg.error = err;
-            // pmsg.tag_id = 0;
+            pmsg.tag_detected = tag_detected_des;
+            pmsg.warning_string = warn_string;
+            pmsg.error = err;
+            pmsg.tag_id = 0;
 
             pgv_pub_->publish(pmsg);
 

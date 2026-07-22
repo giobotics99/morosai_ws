@@ -37,7 +37,7 @@ amcl:
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.5
-    scan_topic: merged
+    scan_topic: merged_filtered
     set_initial_pose: True
     initial_pose_x: 0.0
     initial_pose_y: 0.0
@@ -274,7 +274,7 @@ local_costmap:
         observation_sources: scan
         footprint_clearing_enabled: true
         scan:
-          topic: /merged
+          topic: /merged_filtered
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -335,7 +335,7 @@ global_costmap:
         observation_sources: scan
         footprint_clearing_enabled: true
         scan:
-          topic: /merged
+          topic: /merged_filtered
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -419,7 +419,7 @@ collision_monitor:
     # 2. EMERGENCY STOP ZONE: Extends ~5cm past physical chassis for tight docking clearance
     polygon_stop:
       type: "polygon"
-      points: [0.706, 0.6325, 0.706, -0.6325, -0.706, -0.6325, -0.706, 0.6325]
+      points: [0.726, 0.6525, 0.726, -0.6525, -0.726, -0.6525, -0.726, 0.6525]
       action_type: "stop"
       max_points: 100     # Humble specific: Triggers if more than X points enter
       visualize: True
@@ -431,7 +431,7 @@ collision_monitor:
     
     scan:
       type: "scan"
-      topic: "/merged"
+      topic: "/merged_filtered"
       
     # gordon_tof:
     #   type: "pointcloud"

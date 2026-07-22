@@ -136,7 +136,6 @@ class MqttBridgePublisher(Node):
         # Intercept RViz2 goals so they update nav_status just like /agv_act
         self.create_subscription(PoseStamped, '/goal_pose', self._rviz_goal_cb, qos_reliable)
         
-        # self.create_subscription(String, '/agv_op_CMD', self._agv_op_cmd_cb, qos_reliable)
         self.create_subscription(Twist, '/cmd_vel', self._cmd_vel_cb, qos_reliable)
 
         # Publishers
@@ -524,37 +523,6 @@ class MqttBridgePublisher(Node):
         self.get_logger().info('NavigateToPose goal sent to Nav2')
 
         self.get_logger().info('NavigateToPose goal sent to Nav2')
-
-    # def _agv_op_cmd_cb(self, msg: String):
-    #     """Handle incoming operator commands (/agv_op_CMD)"""
-    #     try:
-    #         cmd = json.loads(msg.data)
-    #         self._agv_operation["command"] = cmd.get("command", None)
-    #         self._agv_operation["status"] = cmd.get("status", self._agv_operation["status"])
-            
-    #         # Handle specific commands
-    #         if cmd.get("command") == "STOP":
-    #             self._current_goals = []
-    #             self._agv_operation["status"] = "STOPPED"
-    #             if self._goal_handle:
-    #                 self._goal_handle.cancel_goal_async()
-    #         elif cmd.get("command") == "PAUSE":
-    #             self._agv_operation["status"] = "PAUSED"
-    #         elif cmd.get("command") == "RESUME":
-    #             self._agv_operation["status"] = "NAVIGATING"
-    #         elif cmd.get("command") == "CLEAR_GOALS":
-    #             self._current_goals = []
-    #             self._agv_operation["status"] = "IDLE"
-    #             if self._goal_handle:
-    #                 self._goal_handle.cancel_goal_async()
-                
-    #         # If waypoints are provided, update goals
-    #         if "waypoints" in cmd:
-    #             self._current_goals = cmd["waypoints"]
-    #             self._agv_operation["status"] = "NAVIGATING"
-                
-    #     except json.JSONDecodeError:
-    #       self.get_logger().warn(f"Invalid JSON in agv_op_CMD: {msg.data}")
 
     def _cmd_vel_cb(self, msg: Twist):
         """Monitor robot velocity to detect actual movement."""

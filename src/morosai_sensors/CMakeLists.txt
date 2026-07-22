@@ -12,6 +12,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(action_msgs REQUIRED)
 
 install(
   DIRECTORY launch config
@@ -29,6 +30,7 @@ install(
     scripts/tag_aligner_node.py
     scripts/tag_align_service.py
     scripts/tag_dock_align_service.py
+    scripts/pgv_floor_dock_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

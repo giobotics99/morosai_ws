@@ -8,6 +8,9 @@ The `morosai_navigation` package provides the "intelligence" for the MOROSAI AGV
 
 This package contains the configuration, maps, and logic for the MOROSAI AGV autonomous navigation.
 
+For scheduler integration details and terminal/MQTT examples, see
+[SCHEDULER_TUTORIAL.md](SCHEDULER_TUTORIAL.md).
+
 ### `nav_topic_publisher.py` Topic Mappings
 
 The `nav_topic_publisher.py` node serves as a bridge between internal, standard ROS 2/Nav2 topics and custom JSON-formatted topics that make external communication (like the MQTT bridge) much simpler.
@@ -23,7 +26,7 @@ The `nav_topic_publisher.py` node serves as a bridge between internal, standard 
 | `/local_costmap/costmap` | `/agv_detect` | Processed obstacle detection information |
 | `/joint_states` | `/wheel_v` | Individual wheel velocities and positions |
 | `/goal_pose` (Nav2 Action) | `/agv_act` | Active waypoint array and current navigation status |
-| `/agv_op_CMD` *(Input)* | `/agv_op` | Operator commands and system operational state |
+| `/agv_op` *(Input)* | `/agv_op` | Operator commands and system operational state |
 
 ## Headless Autonomous Navigation
 
