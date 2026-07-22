@@ -44,7 +44,7 @@ def generate_launch_description():
         # Allow overriding config path
         DeclareLaunchArgument(
             'config_file',
-            default_value=os.path.join(pkg_morosai_sensors, 'config', 'sensors.yaml'),
+            default_value=os.path.join(pkg_morosai_sensors, 'config', 'sensors_cnr.yaml'),
             description='YAML con configurazione sensori'
         ),
 

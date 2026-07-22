@@ -14,7 +14,9 @@ optical_head:
 lidar_front:
   node_name: sllidar_front
   namespace: lidar_front
-  serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_8518796e58ffb144875d33c7ca8065af-if00-port0"
+  # serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_8518796e58ffb144875d33c7ca8065af-if00-port0"
+  serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_f3c7f819204a8b4681723ed792308877-if00-port0"
+  
   serial_baudrate: 256000
   frame_id: lidar_front_link
   scan_mode: "Sensitivity"
@@ -22,7 +24,8 @@ lidar_front:
 lidar_rear:
   node_name: sllidar_rear
   namespace: lidar_rear
-  serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_f3c7f819204a8b4681723ed792308877-if00-port0"
+  # serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_f3c7f819204a8b4681723ed792308877-if00-port0"
+  serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_8518796e58ffb144875d33c7ca8065af-if00-port0"
   serial_baudrate: 256000
   frame_id: lidar_rear_link
   scan_mode: "Sensitivity"

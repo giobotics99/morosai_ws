@@ -76,7 +76,7 @@
         <!-- INGEL CONFIG MINI AV  -->
         <!-- <origin xyz="0.25 0 0.186" rpy="0 1.5708 0"/> -->
         <!-- INGEL CONFIG BIG AGV  -->
-        <origin xyz="0.5825 0 0.186" rpy="0 -1.5708 3.14159"/>
+        <origin xyz="0.5825 0 0.258" rpy="0 -1.5708 3.14159"/>
     </joint>
     
     <link name="tof_optical_frame"/>
@@ -105,7 +105,7 @@
         <child link="lidar_front_link"/>
         <!-- configurazione MINI AGV -->
         <!-- <origin xyz="0.2931 0.246 0.260" rpy="0 0 3.14159"/>   -->
-        <origin xyz="0.608 0.545 0.065" rpy="0 0 3.14159"/>
+        <origin xyz="0.540 0.637 0.098" rpy="0 0 3.14159"/>
     </joint>
 
 
@@ -124,7 +124,8 @@
         <parent link="base_link"/>
         <child link="lidar_rear_link"/>
         <!-- <origin xyz="-0.2731 -0.306 0.260" rpy="0 0 0"/> -->
-        <origin xyz="-0.608 -0.545 0.065" rpy="0 0 0"/>
+        <!-- <origin xyz="-0.608 -0.545 0.065" rpy="0 0 0"/> -->
+        <origin xyz="-0.540 -0.637 0.098" rpy="0 0 0"/>
     </joint>
 
     <!-- ========================================== -->
