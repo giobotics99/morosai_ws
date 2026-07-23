@@ -24,8 +24,9 @@ Look for the 🟢 OK status and an `Inter-sensor Drift` below 0.1s for optimal S
 
 `pgv_floor_dock_node.py` watches `/pgv100_scan`. When a valid PGV tag is detected
 between `x=200` and `x=800` mm, it requests cancellation of active Nav2 goals,
-centers the robot on `y=0`, and drives in the positive robot X direction. The
-forward velocity decreases linearly and reaches zero at `x=800` mm.
+simultaneously corrects its heading and centers the robot on `y=0`, then drives
+in the positive robot X direction. The forward velocity decreases linearly and
+reaches zero at `x=800` mm.
 
 Start it after Nav2 and the optical-head node:
 
@@ -52,4 +53,8 @@ ros2 topic pub --once /agv_dock std_msgs/msg/Bool "{data: true}"
 ```
 
 Useful parameters are `max_forward_speed`, `max_lateral_speed`,
-`y_tolerance_mm`, `x_start_mm`, `x_stop_mm`, and `scan_timeout`.
+`y_tolerance_mm`, `x_start_mm`, `x_stop_mm`, and `scan_timeout`. Heading
+alignment uses `target_angle_deg`, `angle_tolerance_deg`, `angle_kp`,
+`max_angular_speed`, and `angle_sign`. Set `target_angle_deg` to the PGV angle
+that corresponds to the robot rear pointing toward increasing PGV X; the
+default `180.0` degrees must be verified against the physical sensor mounting.

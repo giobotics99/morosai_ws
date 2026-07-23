@@ -41,10 +41,10 @@ Messaggio principale con le informazioni del sensore PGV100.
 | `color_lane_count` | `int32` | Numero di corsie colorate rilevate |
 | `no_color_lane` | `uint8` | 1 se nessuna corsia colorata rilevata, 0 altrimenti |
 | `no_pos` | `uint8` | 1 se posizione non rilevata, 0 altrimenti |
-| `tag_detected` | `uint8` | 1 se tag rilevato, 0 altrimenti |
+<!-- | `tag_detected` | `uint8` | 1 se tag rilevato, 0 altrimenti | -->
 | `warning_string` | `string` | Messaggi di warning o errori del sensore |
 | `error` | `bool` | True se bit di errore attivo, False altrimenti |
-| `tag_id` | `int32` | ID del tag rilevato (da byte 13–16 del pacchetto) |
+<!-- | `tag_id` | `int32` | ID del tag rilevato (da byte 13–16 del pacchetto) | -->
 
 #### `chatter` (`std_msgs::msg::String`)
 

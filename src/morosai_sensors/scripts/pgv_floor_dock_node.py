@@ -12,7 +12,7 @@ from std_msgs.msg import Bool, String
 
 class DockState(Enum):
     # Stati principali della macchina di docking:
-    # IDLE = attesa di un tag valido, ALIGN = centraggio su y,
+    # IDLE = attesa di un tag valido, ALIGN = heading e centraggio su y,
     # APPROACH = avanzamento nella direzione positiva di x.
     IDLE = 0
     ALIGN = 1
@@ -43,7 +43,11 @@ class PgvFloorDockNode(Node):
         # Tolleranza di centraggio laterale e limiti di velocita.
         self.declare_parameter('y_tolerance_mm', 15.0)
         self.declare_parameter('max_forward_speed', 0.15)
-        self.declare_parameter('max_lateral_speed', 0.08)
+        self.declare_parameter('max_lateral_speed', 0.04)
+        self.declare_parameter('angle_tolerance_deg', 1.0)
+        self.declare_parameter('angle_kp', 0.01)
+        self.declare_parameter('max_angular_speed', 0.10)
+        self.declare_parameter('angle_sign', 1.0)
 
         # Guadagno proporzionale per correggere y:
         # velocita_y = lateral_sign * lateral_kp * y_pos.
@@ -64,6 +68,14 @@ class PgvFloorDockNode(Node):
         self.y_tolerance_mm = float(self.get_parameter('y_tolerance_mm').value)
         self.max_forward_speed = float(self.get_parameter('max_forward_speed').value)
         self.max_lateral_speed = float(self.get_parameter('max_lateral_speed').value)
+        self.angle_tolerance_deg = float(
+            self.get_parameter('angle_tolerance_deg').value
+        )
+        self.angle_kp = float(self.get_parameter('angle_kp').value)
+        self.max_angular_speed = float(
+            self.get_parameter('max_angular_speed').value
+        )
+        self.angle_sign = float(self.get_parameter('angle_sign').value)
         self.lateral_kp = float(self.get_parameter('lateral_kp').value)
         self.lateral_sign = float(self.get_parameter('lateral_sign').value)
         self.scan_timeout = float(self.get_parameter('scan_timeout').value)
@@ -127,14 +139,14 @@ class PgvFloorDockNode(Node):
         if not self.is_start_tag(msg):
             return
 
-        # Primo passaggio: ferma l'obiettivo Nav2 e prepara il centraggio su y.
+        # Primo passaggio: ferma Nav2 e corregge contemporaneamente heading e y.
         self.state = DockState.ALIGN
         self.cancel_requested = False
         self.publish_status('TAG_DETECTED_CANCELING_NAV')
         self.request_nav_cancel()
         self.get_logger().info(
             f'PGV tag detected at x={msg.x_pos:.1f} mm, y={msg.y_pos:.1f} mm; '
-            'starting lateral alignment'
+            'alignment to 0/180 deg and y=0'
         )
 
     def dock_command_callback(self, msg: Bool):
@@ -241,14 +253,16 @@ class PgvFloorDockNode(Node):
 
         scan = self.latest_scan
         if self.state == DockState.ALIGN:
-            # Prima si corregge solo la posizione laterale. In questo modo
-            # il robot raggiunge il centro della striscia/tag prima di avanzare.
-            if abs(scan.y_pos) <= self.y_tolerance_mm:
+            # Mantiene il tag sotto osservazione correggendo heading e y insieme.
+            if (
+                abs(scan.y_pos) <= self.y_tolerance_mm
+                and self.is_heading_aligned(scan.angle)
+            ):
                 self.state = DockState.APPROACH
                 self.publish_status('APPROACHING')
-                self.get_logger().info('PGV lateral alignment complete')
+                self.get_logger().info('PGV heading and lateral alignment complete')
             else:
-                self.publish_lateral_alignment(scan.y_pos)
+                self.publish_alignment(scan.angle, scan.y_pos)
                 return
 
         if self.state == DockState.APPROACH:
@@ -267,10 +281,22 @@ class PgvFloorDockNode(Node):
 
             self.publish_approach(scan.x_pos)
 
-    def publish_lateral_alignment(self, y_pos_mm):
-        # Controllo proporzionale dell'errore laterale.
-        # Il comando usa linear.y per un robot omnidirezionale.
+    def angle_error(self, angle_deg):
+        # PGV increases clockwise. Select the nearer of the two valid headings.
+        angle_to_zero = (0.0 - angle_deg + 180.0) % 360.0 - 180.0
+        angle_to_180 = (180.0 - angle_deg + 180.0) % 360.0 - 180.0
+        return angle_to_zero if abs(angle_to_zero) <= abs(angle_to_180) else angle_to_180
+
+    def is_heading_aligned(self, angle_deg):
+        return abs(self.angle_error(angle_deg)) <= self.angle_tolerance_deg
+
+    def publish_alignment(self, angle_deg, y_pos_mm):
         twist = Twist()
+        angular_speed = self.angle_sign * self.angle_kp * self.angle_error(angle_deg)
+        twist.angular.z = max(
+            -self.max_angular_speed,
+            min(self.max_angular_speed, angular_speed),
+        )
         lateral_speed = self.lateral_sign * self.lateral_kp * y_pos_mm
         twist.linear.y = max(
             -self.max_lateral_speed,

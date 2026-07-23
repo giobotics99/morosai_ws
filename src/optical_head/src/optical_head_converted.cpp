@@ -279,7 +279,6 @@ public:
                 if(warning_2[i])
                     N_warnings++, warn_string += get_warning_msg(i+7);
 
-
             if(err)
                 warn_string = "ERROR BIT 1 - " + warn_string + " - NumWarnings " + std::to_string(N_warnings);
             else if(war)
@@ -299,10 +298,10 @@ public:
             pmsg.color_lane_count = agv_c_lane_count_des;
             pmsg.no_color_lane = agv_no_color_lane_des;
             pmsg.no_pos = agv_no_pos_des;
-            pmsg.tag_detected = tag_detected_des;
+            // pmsg.tag_detected = tag_detected_des;
             pmsg.warning_string = warn_string;
             pmsg.error = err;
-            pmsg.tag_id = 0;
+            // pmsg.tag_id = 0;
 
             pgv_pub_->publish(pmsg);
 
