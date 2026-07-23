@@ -63,19 +63,19 @@ def generate_launch_description():
             }]
         ),
 
-        # # === OPTICAL HEAD Node ===
-        # Node(
-        #     package='optical_head',
-        #     executable='optical_head_converted',
-        #     name=optical_head_cfg['node_name'],
-        #     namespace=optical_head_cfg['namespace'],
-        #     output='screen',
-        #     # respawn=True,
-        #     parameters=[{
-        #         'frame_id': optical_head_cfg['frame_id'],
-        #         'serial_port': optical_head_cfg['serial_port']
-        #     }]
-        # ),
+        # === OPTICAL HEAD Node ===
+        Node(
+            package='optical_head',
+            executable='optical_head_converted',
+            name=optical_head_cfg['node_name'],
+            namespace=optical_head_cfg['namespace'],
+            output='screen',
+            # respawn=True,
+            parameters=[{
+                'frame_id': optical_head_cfg['frame_id'],
+                'serial_port': optical_head_cfg['serial_port']
+            }]
+        ),
 
         # # === Virtual Corridor Node ===
         # Node(

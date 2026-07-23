@@ -9,7 +9,7 @@ optical_head:
   node_name: optical_head_node
   namespace: optical_head
   frame_id: optical_head_link
-  serial_port: "/dev/pgv100"
+  serial_port: "/dev/ttyUSB0"
 
 lidar_front:
   node_name: sllidar_front
