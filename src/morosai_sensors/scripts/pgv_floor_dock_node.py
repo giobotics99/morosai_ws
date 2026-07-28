@@ -350,3 +350,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
+# ros2 topic pub --once /agv_dock std_msgs/msg/Bool "{data: true}"

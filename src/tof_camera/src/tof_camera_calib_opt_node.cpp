@@ -133,7 +133,7 @@ private:
         cv::Mat img(frame.rows(), frame.cols(), CV_8UC1, frame.data());
         cv::Mat rotated;
         cv::rotate(img, rotated, cv::ROTATE_90_CLOCKWISE);
-        cv::flip(rotated, rotated, 1);  // sensor-level horizontal mirror
+        // cv::flip(rotated, rotated, 1);  // sensor-level horizontal mirror
         publish_image(rotated, intensity_pub_, "tof_optical_frame", "mono8", stamp);
     }
 
@@ -149,7 +149,7 @@ private:
         cv::Mat scaled, rotated;
         img.convertTo(scaled, CV_8UC1);
         cv::rotate(scaled, rotated, cv::ROTATE_90_CLOCKWISE);
-        cv::flip(rotated, rotated, 1);  // sensor-level horizontal mirror
+        // cv::flip(rotated, rotated, 1);  // sensor-level horizontal mirror
 
         publish_image(rotated, z_pub_, "tof_optical_frame", "mono8", stamp);
     }
