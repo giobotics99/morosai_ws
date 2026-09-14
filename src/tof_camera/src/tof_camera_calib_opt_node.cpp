@@ -177,13 +177,26 @@ private:
             sensor_msgs::PointCloud2Iterator<float>   iter_x(msg, "x"), iter_y(msg, "y"), iter_z(msg, "z");
             sensor_msgs::PointCloud2Iterator<uint8_t> iter_rgb(msg, "rgb");
 
+            // for (size_t i = 0; i < N; ++i) {
+            //     *iter_x    = data_ptr[i].x * 0.001f;
+            //     *iter_y    = data_ptr[i].y * 0.001f;
+            //     *iter_z    = data_ptr[i].z * 0.001f;
+            //     iter_rgb[0] = data_ptr[i].b;
+            //     iter_rgb[1] = data_ptr[i].g;
+            //     iter_rgb[2] = data_ptr[i].r;
+            //     ++iter_x; ++iter_y; ++iter_z; ++iter_rgb;
+            // }
+
             for (size_t i = 0; i < N; ++i) {
-                *iter_x    = data_ptr[i].x * 0.001f;
-                *iter_y    = data_ptr[i].y * 0.001f;
-                *iter_z    = data_ptr[i].z * 0.001f;
+                // Invertiamo X e Y per compensare il ribaltamento a 180 gradi
+                *iter_x    = -data_ptr[i].x * 0.001f;
+                *iter_y    = -data_ptr[i].y * 0.001f;
+                *iter_z    =  data_ptr[i].z * 0.001f;
+                
                 iter_rgb[0] = data_ptr[i].b;
                 iter_rgb[1] = data_ptr[i].g;
                 iter_rgb[2] = data_ptr[i].r;
+                
                 ++iter_x; ++iter_y; ++iter_z; ++iter_rgb;
             }
         }

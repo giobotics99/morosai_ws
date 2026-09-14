@@ -10,13 +10,13 @@
     <xacro:include filename="$(find morosai_description)/urdf/morosai_agv_ros2_control.xacro"/>
 
     <!-- Definizione delle dimensioni principali -->
-    <xacro:property name="base_length" value="1.312"/>  <!-- Lunghezza 1312 mm X -->
-    <xacro:property name="base_width" value="1.165"/>   <!-- Larghezza 1165 mm Y --> 
-    <xacro:property name="wheel_radius" value="0.05"/>   <!-- Raggio stimato della ruota -->
+    <xacro:property name="base_length" value="1.350"/>  <!-- Lunghezza 1312 mm X -->
+    <xacro:property name="base_width" value="1.155"/>   <!-- Larghezza 1165 mm Y --> 
+    <xacro:property name="wheel_radius" value="0.081"/>   <!-- Raggio stimato della ruota -->
 
     <!-- Definizione parametri posizionamento ruote dai disegni CAD -->
-    <xacro:property name="wheel_x_pos" value="0.435"/>   <!-- Offset X dal centro -->
-    <xacro:property name="wheel_y_pos" value="0.4495"/>  <!-- Offset Y dal centro (899/2) -->
+    <xacro:property name="wheel_x_pos" value="0.4175"/>   <!-- Offset X dal centro -->
+    <xacro:property name="wheel_y_pos" value="0.4425"/>  <!-- Offset Y dal centro (899/2) -->
     <xacro:property name="wheel_z_pos" value="0.05"/>    <!-- Altezza asse Z -->
 
     <link name="base_footprint"/>
@@ -76,7 +76,8 @@
         <!-- INGEL CONFIG MINI AV  -->
         <!-- <origin xyz="0.25 0 0.186" rpy="0 1.5708 0"/> -->
         <!-- INGEL CONFIG BIG AGV  -->
-        <origin xyz="0.5825 0 0.258" rpy="0 -1.5708 3.14159"/>
+        <!-- <origin xyz="0.5575 0 0.258" rpy="0 -1.5708 3.14159"/> -->
+        <origin xyz="0.5575 0 0.2" rpy="0 -1.5708 3.14159"/>
     </joint>
     
     <link name="tof_optical_frame"/>
@@ -145,7 +146,7 @@
     <joint name="optical_head_joint" type="fixed">
         <parent link="base_link"/>
         <child link="optical_head_link"/>
-        <origin xyz="0.475 0.0 0.088" rpy="3.14159265359 0 0"/>
+        <origin xyz="0.4375 0.0 0.125" rpy="3.14159265359 0 0"/>
     </joint>
     
     <!-- WHEELS -->
