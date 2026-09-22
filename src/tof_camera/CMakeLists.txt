@@ -5,7 +5,7 @@ project(kea_camera)
 # TOF Library Configuration
 # Set TOF_LIB_DIR environment variable or modify default path
 # ============================================================
-set(TOF_LIB_DIR "/home/robouser/tof_lib")
+set(TOF_LIB_DIR "/home/morosai/tof-jetson")
 
 message(STATUS "Using TOF library from: ${TOF_LIB_DIR}")
 

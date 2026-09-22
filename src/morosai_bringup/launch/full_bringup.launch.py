@@ -232,6 +232,6 @@ def generate_launch_description():
         collision_monitor_node,
         lifecycle_manager_safety,
         apriltag_node,
-        map_updater_node
-        # rviz_node
+        map_updater_node,
+        rviz_node
     ])
