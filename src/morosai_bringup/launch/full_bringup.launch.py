@@ -69,7 +69,7 @@ def generate_launch_description():
 
     declare_autostart_arg = DeclareLaunchArgument(
         'autostart',
-        default_value='True',
+        default_value='true',
         description='Automatically start NAV2 lifecycle nodes'
     )
 
@@ -168,7 +168,8 @@ def generate_launch_description():
             'family': 'Standard52h13',
             'size': 0.088,
             'detector.threads': 4,
-            'detector.decimate': 2.0
+            'detector.decimate': 2.0,
+            'qos_profile': "sensor_data"
         }],
         output='screen'
     )

@@ -46,7 +46,7 @@ amcl:
 map_server:
   ros__parameters:
     use_sim_time: False
-    yaml_filename: "/home/robouser/morosai_ws/src/morosai_navigation/maps/fema_map.yaml"
+    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/fema_map.yaml"
 
 map_saver:
   ros__parameters:
@@ -76,7 +76,7 @@ planner_server:
       cost_penalty: 2.0
       rotation_penalty: 5.0
       retrospective_penalty: 0.015
-      lattice_filepath: "/home/robouser/morosai_ws/src/morosai_navigation/config/smac_lattice/my_lattice.json"
+      lattice_filepath: "/home/morosai/morosai_ws/src/morosai_navigation/config/smac_lattice/my_lattice.json"
       lookup_table_size: 20.0
       cache_obstacle_heuristic: false
       allow_reverse_expansion: true
