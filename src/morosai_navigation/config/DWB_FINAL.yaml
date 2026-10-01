@@ -14,7 +14,7 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 100.0
+    laser_max_range: 25.0
     laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
@@ -46,7 +46,7 @@ amcl:
 map_server:
   ros__parameters:
     use_sim_time: False
-    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/fema_map.yaml"
+    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/map_fema_28_09_26.yaml"
 
 map_saver:
   ros__parameters:
@@ -111,9 +111,9 @@ behavior_server:
     transform_tolerance: 0.4
     use_sim_time: false
     # Limitazione drastica della rotazione di recupero dello chassis
-    max_rotational_vel: 0.15
-    min_rotational_vel: 0.05
-    rotational_acc_lim: 0.08
+    max_rotational_vel: 0.6
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 0.8
 
 controller_server:
   ros__parameters:
@@ -180,29 +180,29 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
       # Velocità lineari ridotte ed eque per marcia avanti/indietro
-      min_vel_x: -0.20
-      max_vel_x: 0.25
+      min_vel_x: -0.6
+      max_vel_x: 0.6
       # Mantenere a 0.0 se differenziale puro, altrimenti bassi valori se omni
-      min_vel_y: -0.05
-      max_vel_y: 0.05
+      min_vel_y: -0.6
+      max_vel_y: 0.6
       # Rotazione molto lenta e controllata
-      max_vel_theta: 0.20
+      max_vel_theta: 0.40
       min_speed_xy: 0.01
-      max_speed_xy: 0.25
-      min_speed_theta: -0.20
+      max_speed_xy: 0.5
+      min_speed_theta: -0.30
       # Rampe di accelerazione estremamente dolci (ridotte a 0.1 m/s²)
-      acc_lim_x: 0.10
-      acc_lim_y: 0.02
-      acc_lim_theta: 0.10
+      acc_lim_x: 0.2
+      acc_lim_y: 0.2
+      acc_lim_theta: 0.2
       # Decelerazione controllata per non far sobbalzare la struttura da 265kg
-      decel_lim_x: -0.15
-      decel_lim_y: -0.02
-      decel_lim_theta: -0.15
+      decel_lim_x: -0.2
+      decel_lim_y: -0.2
+      decel_lim_theta: -0.2
       # Incrementiamo i campionamenti temporali per traiettorie più stabili
       vx_samples: 25
-      vy_samples: 5
+      vy_samples: 25
       vtheta_samples: 25
-      sim_time: 2.0 # Aumentato per guardare più avanti data la bassa velocità
+      sim_time: 2.5 # Aumentato per guardare più avanti data la bassa velocità. A 0.6 m/s, simula avanti di 1.5 metri.
       linear_granularity: 0.03
       angular_granularity: 0.02
       transform_tolerance: 0.4
@@ -214,14 +214,14 @@ controller_server:
       critics: ["BaseObstacle", "ObstacleFootprintCritic", "RotateToGoal", "Oscillation", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       ObstacleFootprintCritic.scale: 12.0 # Aumentato il peso degli ostacoli vicini
       BaseObstacle.scale: 12.0
-      PathAlign.scale: 8.0
-      PathAlign.forward_point_distance: 0.3
+      PathAlign.scale: 12.0
+      PathAlign.forward_point_distance: 0.4
       GoalAlign.scale: 20.0
       GoalAlign.forward_point_distance: 0.3
-      PathDist.scale: 4.0
+      PathDist.scale: 6.0
       GoalDist.scale: 12.0
       RotateToGoal.scale: 8.0
-      RotateToGoal.slowing_factor: 7.0 # Frena in rotazione in modo molto più progressivo
+      RotateToGoal.slowing_factor: 6.0 # Frena in rotazione in modo molto più progressivo
       RotateToGoal.lookahead_time: -1.0
 
 
@@ -300,7 +300,7 @@ local_costmap:
         observation_sources: gordon_tof virtual_corridor
         footprint_clearing_enabled: true
         gordon_tof:
-          topic: "/gordon_tof/pointcloud"
+          topic: "/gordon_tof/pointcloud_filtered"
           data_type: "PointCloud2"
           max_obstacle_height: 2.0
           clearing: True
@@ -350,7 +350,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.0
-        inflation_radius: 1.3   # Increased from 0.55
+        inflation_radius: 1.1   # Increased from 0.55
       always_send_full_costmap: True
 
 # velocity_smoother:
@@ -377,13 +377,13 @@ velocity_smoother:
     scale_velocities: true
     feedback: "CLOSED_LOOP"
     # Allineato ai limiti del DWB
-    max_velocity: [0.25, 0.05, 0.20]
-    min_velocity: [-0.20, -0.05, -0.20]
+    max_velocity: [0.6, 0.6, 0.6]
+    min_velocity: [-0.6, -0.6, -0.6]
     deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 0.5
+    velocity_timeout: 0.6
     # Rampe di accelerazione/decelerazione identiche o leggermente inferiori al DWB
-    max_accel: [0.10, 0.02, 0.10]
-    max_decel: [-0.15, -0.02, -0.15]
+    max_accel: [0.2, 0.2, 0.2]
+    max_decel: [-0.2, -0.2, -0.2]
     odom_topic: "odom"
     odom_duration: 0.1
     use_realtime_priority: false

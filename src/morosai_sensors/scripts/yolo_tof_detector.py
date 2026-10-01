@@ -66,10 +66,11 @@ class YoloTofDetectorNode(Node):
         # ── Parameters ────────────────────────────────────────────────────────
         self.declare_parameter(
             "weights_path",
-            os.path.join(
-                os.path.dirname(__file__),   # same dir as this script
-                "..", "weights", "yolo26n.pt"
-            ),
+            # os.path.join(
+            #     os.path.dirname(__file__),   # same dir as this script
+            #     "..", "..", "weights", "yolo26n.pt"
+            # ),
+            '/home/morosai/morosai_ws/src/morosai_sensors/weights/yolo26n.pt'
         )
         self.declare_parameter("image_topic", "/gordon_tof/bgr")
         self.declare_parameter("confidence_threshold", 0.25)

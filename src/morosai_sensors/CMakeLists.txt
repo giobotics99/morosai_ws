@@ -31,6 +31,7 @@ install(
     scripts/tag_align_service.py
     scripts/tag_dock_align_service.py
     scripts/pgv_floor_dock_node.py
+    scripts/pointcloud_filter_tof.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

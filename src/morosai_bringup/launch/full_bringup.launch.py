@@ -39,7 +39,7 @@ def generate_launch_description():
     # ============================================================
     declare_map_arg = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(pkg_morosai_navigation, 'maps', 'fema_map2.yaml'),
+        default_value=os.path.join(pkg_morosai_navigation, 'maps', 'map_fema_28_09_26.yaml'),
         description='Full path to map yaml file'
     )
 
@@ -227,7 +227,7 @@ def generate_launch_description():
 
         # Launch components
         sensors_launch,
-        laser_filter_node,
+        # laser_filter_node,
         nav2_bringup_launch,
         nav_topic_publisher_node,
         collision_monitor_node,

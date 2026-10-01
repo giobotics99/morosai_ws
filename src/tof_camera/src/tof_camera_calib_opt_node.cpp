@@ -34,6 +34,7 @@ public:
 
         // Publishers
         bgr_pub_       = this->create_publisher<sensor_msgs::msg::Image>("/gordon_tof/bgr", rclcpp::SensorDataQoS());
+        bgr_visual_pub_       = this->create_publisher<sensor_msgs::msg::Image>("/gordon_tof/bgr_visual", rclcpp::SensorDataQoS());
         info_pub_      = this->create_publisher<sensor_msgs::msg::CameraInfo>("/gordon_tof/camera_info", rclcpp::SensorDataQoS());
         intensity_pub_ = this->create_publisher<sensor_msgs::msg::Image>("/gordon_tof/intensity", rclcpp::SensorDataQoS());
         z_pub_         = this->create_publisher<sensor_msgs::msg::Image>("/gordon_tof/z", rclcpp::SensorDataQoS());
@@ -122,8 +123,10 @@ private:
     // Apply flip(-1) unconditionally so the published image is upright.
     void handle_bgr(tof::Data& frame, const rclcpp::Time& stamp) {
         cv::Mat img(frame.rows(), frame.cols(), CV_8UC3, frame.data());
-        cv::flip(img, img, -1);  // sensor-level 180° correction (always needed)
+        cv::Mat img_flip;
         publish_image(img, bgr_pub_, "tof_optical_frame", "bgr8", stamp);
+        cv::flip(img, img_flip, -1);  // sensor-level 180° correction (always needed)
+        publish_image(img_flip, bgr_visual_pub_, "tof_optical_frame", "bgr8", stamp);
         publish_camera_info(stamp, frame.rows(), frame.cols());
     }
 
@@ -226,12 +229,12 @@ private:
 
         const double fx          = k_mat[0];
         const double fy          = k_mat[4];
-        const double cx_sensor   = k_mat[2]; 
-        const double cy_sensor   = k_mat[5];
+        const double cx   = k_mat[2]; 
+        const double cy   = k_mat[5];
 
         // Mirror principal point to match the 180° flipped image
-        const double cx = static_cast<double>(cols) - 1.0 - cx_sensor;
-        const double cy = static_cast<double>(rows) - 1.0 - cy_sensor;
+        // const double cx = static_cast<double>(cols) - 1.0 - cx_sensor;
+        // const double cy = static_cast<double>(rows) - 1.0 - cy_sensor;
 
         info.k = {fx,  0.0, cx,
                   0.0, fy,  cy,
@@ -270,7 +273,7 @@ private:
     bool has_crashed_        = false;
 
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr     bgr_pub_, intensity_pub_, z_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr     bgr_pub_, bgr_visual_pub_, intensity_pub_, z_pub_;
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr info_pub_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_pub_;
 };

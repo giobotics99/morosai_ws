@@ -77,7 +77,8 @@
         <!-- <origin xyz="0.25 0 0.186" rpy="0 1.5708 0"/> -->
         <!-- INGEL CONFIG BIG AGV  -->
         <!-- <origin xyz="0.5575 0 0.258" rpy="0 -1.5708 3.14159"/> -->
-        <origin xyz="0.5575 0 0.2" rpy="0 -1.5708 3.14159"/>
+        <origin xyz="0.5575 0 0.15" rpy="0 -1.57 3.14159"/>
+        <!-- <origin xyz="0.5575 0 0.15" rpy="0 -1.70 3.14159"/> -->
     </joint>
     
     <link name="tof_optical_frame"/>

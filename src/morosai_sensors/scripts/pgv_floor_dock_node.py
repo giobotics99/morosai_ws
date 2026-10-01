@@ -37,8 +37,10 @@ class PgvFloorDockNode(Node):
         self.declare_parameter('dock_command_topic', '/agv_dock')
 
         # Il docking parte quando x e' nell'intervallo [200, 800] mm.
-        self.declare_parameter('x_start_mm', 200.0)
-        self.declare_parameter('x_stop_mm', 800.0)
+        self.declare_parameter('x_start_mm', 4800.0)
+        self.declare_parameter('x_stop_mm', 2300.0)
+        # Direzione docking: True per retromarcia (linear.x < 0), False per marcia avanti.
+        self.declare_parameter('reverse_docking', True)
 
         # Tolleranza di centraggio laterale e limiti di velocita.
         self.declare_parameter('y_tolerance_mm', 15.0)
@@ -65,6 +67,7 @@ class PgvFloorDockNode(Node):
         dock_command_topic = self.get_parameter('dock_command_topic').value
         self.x_start_mm = float(self.get_parameter('x_start_mm').value)
         self.x_stop_mm = float(self.get_parameter('x_stop_mm').value)
+        self.reverse_docking = bool(self.get_parameter('reverse_docking').value)
         self.y_tolerance_mm = float(self.get_parameter('y_tolerance_mm').value)
         self.max_forward_speed = float(self.get_parameter('max_forward_speed').value)
         self.max_lateral_speed = float(self.get_parameter('max_lateral_speed').value)
@@ -81,8 +84,11 @@ class PgvFloorDockNode(Node):
         self.scan_timeout = float(self.get_parameter('scan_timeout').value)
 
         # Evita una configurazione senza intervallo di avanzamento valido.
-        if self.x_stop_mm <= self.x_start_mm:
-            raise ValueError('x_stop_mm must be greater than x_start_mm')
+        # if self.x_stop_mm <= self.x_start_mm:
+        #     raise ValueError('x_stop_mm must be greater than x_start_mm')
+
+        if self.x_start_mm <= self.x_stop_mm:
+            raise ValueError('x_stop_mm must be SMALLER than x_start_mm')
 
         # Il docking deve essere esplicitamente abilitato dallo scheduler.
         # Cosi' il semplice passaggio sopra un tag non avvia il robot.
@@ -177,10 +183,11 @@ class PgvFloorDockNode(Node):
 
     def is_start_tag(self, msg: PgvScanData):
         # Questa condizione viene usata solo per avviare un nuovo docking:
-        # il tag deve trovarsi nell'intervallo iniziale x=200..800 mm.
+        # la posizione deve essere valida (no_pos == 0) e nell'intervallo iniziale x=200..800 mm.
         return (
-            msg.tag_detected != 0
-            and self.x_start_mm <= msg.x_pos <= self.x_stop_mm
+            msg.no_pos == 0
+            # and self.x_start_mm <= msg.x_pos <= self.x_stop_mm
+            and self.x_stop_mm <= msg.x_pos <= self.x_start_mm
             and msg.error is False
         )
 
@@ -189,9 +196,11 @@ class PgvFloorDockNode(Node):
         # limite il robot sarebbe gia' oltre la posizione massima consentita.
         # Il control_loop ferma il robot prima di poter pubblicare altri comandi.
         return (
-            msg.tag_detected != 0
-            and msg.x_pos >= self.x_start_mm
-            and msg.x_pos <= self.x_stop_mm
+            msg.no_pos == 0
+            # and msg.x_pos >= self.x_start_mm
+            # and msg.x_pos <= self.x_stop_mm
+            and msg.x_pos >= self.x_stop_mm
+            and msg.x_pos <= self.x_start_mm
             and msg.error is False
         )
 
@@ -267,7 +276,8 @@ class PgvFloorDockNode(Node):
 
         if self.state == DockState.APPROACH:
             # Quando x raggiunge 800 mm il docking e' completato.
-            if scan.x_pos >= self.x_stop_mm:
+            # if scan.x_pos >= self.x_stop_mm:
+            if scan.x_pos <= self.x_stop_mm:
                 self.stop_robot()
                 self.publish_status('SUCCESS')
                 self.get_logger().info(
@@ -307,15 +317,20 @@ class PgvFloorDockNode(Node):
     def publish_approach(self, x_pos_mm):
         # Calcola quanto e' avanzato il robot nell'intervallo x.
         # progress=0 a x_start e progress=1 a x_stop.
-        progress = (x_pos_mm - self.x_start_mm) / (
-            self.x_stop_mm - self.x_start_mm
+        # progress = (x_pos_mm - self.x_start_mm) / (
+        #     self.x_stop_mm - self.x_start_mm
+        # )
+        progress = (self.x_start_mm - x_pos_mm) / (
+            self.x_start_mm - self.x_stop_mm
         )
 
         # La velocita' diminuisce linearmente con l'aumentare di x:
         # velocita' massima all'inizio e quasi zero vicino al punto finale.
         forward_speed = self.max_forward_speed * (1.0 - progress)
+        speed = max(0.0, min(self.max_forward_speed, forward_speed))
         twist = Twist()
-        twist.linear.x = max(0.0, min(self.max_forward_speed, forward_speed))
+        # Se reverse_docking e' True, il robot indietreggia in retromarcia (linear.x negativo)
+        twist.linear.x = -speed if self.reverse_docking else speed
         self.cmd_pub.publish(twist)
 
     def stop_robot(self):

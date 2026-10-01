@@ -71,6 +71,13 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+# Installa gli script Python come eseguibili in lib/PROJECT_NAME
+install(PROGRAMS
+  scripts/scan_to_cloud.py
+  scripts/watchdog_lidar.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ################################################################################
 # Macro for ament package
 ################################################################################

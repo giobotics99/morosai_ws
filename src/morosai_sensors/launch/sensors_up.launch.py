@@ -32,7 +32,7 @@ def generate_launch_description():
     # === Load Sensor Config ===
     # Switch to 'config/sensors.yaml' for the standard robot (camera upside-down).
     # Switch to 'config/sensors_cnr.yaml' for the CNR robot (camera upright).
-    config = load_yaml('morosai_sensors', 'config/sensors.yaml')
+    config = load_yaml('morosai_sensors', 'config/sensors_cnr.yaml')
 
     tof_cfg          = config['tof_camera']
     lidar_front_cfg  = config['lidar_front']
@@ -131,5 +131,28 @@ def generate_launch_description():
                     value_type=str
                 )
             }]
+        ),
+
+        # === TOF Intensity Filter Node ===
+        Node(
+            package='morosai_sensors',
+            executable='pointcloud_filter_tof.py',
+            name='tof_intensity_filter_node',
+            output='screen',
+            parameters=[{
+                'intensity_threshold_down': 10
+            }]
+        ),
+
+        # === LiDAR Watchdog Node ===
+        Node(
+            package='sllidar_ros2',
+            executable='watchdog_lidar.py',
+            name='lidar_watchdog_node',
+            output='screen',
+            parameters=[{
+                'timeout_sec': 3.0
+            }]
         )
+
     ])

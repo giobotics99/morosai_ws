@@ -23,11 +23,11 @@ class TagAlignNode(Node):
         super().__init__('tag_align_node')
         
         # --- PARAMETRI ---
-        self.declare_parameter('allowed_tags', ['tagStandard52h13:108', 'tagStandard52h13:109', 'tagStandard52h13:110'])
+        self.declare_parameter('allowed_tags', ['tagStandard52h13:104', 'tagStandard52h13:103', 'tagStandard52h13:102'])
         self.declare_parameter('camera_frame', 'tof_optical_frame')
         self.declare_parameter('robot_frame', 'base_footprint')
         self.declare_parameter('cmd_vel_topic', '/cmd_vel_raw')
-        self.declare_parameter('target_distance', 1.5)
+        self.declare_parameter('target_distance', 0.5)
         self.declare_parameter('kp_x', 0.8)
         self.declare_parameter('kp_y', 0.8)
         self.declare_parameter('kp_yaw', 1.2)

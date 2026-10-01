@@ -76,7 +76,7 @@ public:
         this->get_parameter("frame_id", frame_id_);
 
         // Configurazione seriale
-        this->declare_parameter<std::string>("serial_port", "/dev/pgv100");
+        this->declare_parameter<std::string>("serial_port", "/dev/ttyACM0");
         std::string port;
         this->get_parameter("serial_port", port);
         serial_port = open(port.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
