@@ -41,13 +41,6 @@ def generate_launch_description():
 
     return LaunchDescription([
 
-        # Allow overriding config path
-        DeclareLaunchArgument(
-            'config_file',
-            default_value=os.path.join(pkg_morosai_sensors, 'config', 'sensors.yaml'),
-            description='YAML con configurazione sensori'
-        ),
-
         # === TOF CAMERA Node ===
         Node(
             package='kea_camera',
@@ -152,6 +145,18 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'timeout_sec': 3.0
+            }]
+        ),
+
+        Node(
+            package='realsense2_camera',
+            executable='realsense2_camera_node',
+            name='camera',
+            namespace='camera',
+            output='screen',
+            parameters=[{
+                'enable_pose': True,
+                'device_type': 't265'
             }]
         )
 

@@ -34,8 +34,6 @@ class AGVNode : public rclcpp::Node
 
 private:
 
-
-
 public:
 
     std::string selected_dir;

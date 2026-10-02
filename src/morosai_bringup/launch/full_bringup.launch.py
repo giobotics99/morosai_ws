@@ -72,6 +72,7 @@ def generate_launch_description():
         default_value='true',
         description='Automatically start NAV2 lifecycle nodes'
     )
+    
 
     # ============================================================
     # Launch Configuration
@@ -215,6 +216,21 @@ def generate_launch_description():
     )
 
     # ============================================================
+    # 6. Robot Localization (EKF Node)
+    # Fuses wheel odom, T265 pose, and T265 gyro/accel
+    # ============================================================
+    ekf_config_file = os.path.join(pkg_morosai_navigation, 'config', 'ekf.yaml')
+    
+    ekf_filter_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config_file, {'use_sim_time': use_sim_time}],
+        remappings=[('/odometry/filtered', '/odometry/filtered')]
+    )
+
+    # ============================================================
     # Build Launch Description
     # ============================================================
     return LaunchDescription([
@@ -227,7 +243,8 @@ def generate_launch_description():
 
         # Launch components
         sensors_launch,
-        # laser_filter_node,
+        laser_filter_node,
+        ekf_filter_node,
         nav2_bringup_launch,
         nav_topic_publisher_node,
         collision_monitor_node,
