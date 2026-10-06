@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """
 MOROSAI AGV Full Bringup Launch File
+Ottimizzato per architettura custom su NVIDIA Jetson Orin AGX.
 
-Launches all systems for the MOROSAI AGV:
-    - Sensors (TOF, LIDARs, Optical Head) via sensors_up.launch.py
-    - Robot State Publisher (URDF)
-    - NAV2 Navigation Stack
-    - Navigation Topic Publisher (for /agv_* topics)
-    - RViz2 visualization
-
-Usage:
-    ros2 launch morosai_bringup full_bringup.launch.py
-    ros2 launch morosai_bringup full_bringup.launch.py map:=/path/to/map.yaml
-    ros2 launch morosai_bringup full_bringup.launch.py use_rviz:=false
+Questo script lancia i nodi NAV2 singolarmente, evitando di caricare
+processi inutili (docking_server, route_server, smoother_server) che 
+nav2_bringup caricherebbe di default in ROS 2 Jazzy.
 """
 
 from launch import LaunchDescription
@@ -32,7 +25,6 @@ def generate_launch_description():
     pkg_morosai_sensors = get_package_share_directory('morosai_sensors')
     pkg_morosai_navigation = get_package_share_directory('morosai_navigation')
     pkg_morosai_description = get_package_share_directory('morosai_description')
-    pkg_nav2_bringup = get_package_share_directory('nav2_bringup')
 
     # ============================================================
     # Launch Arguments
@@ -42,12 +34,6 @@ def generate_launch_description():
         default_value=os.path.join(pkg_morosai_navigation, 'maps', 'map_fema_28_09_26.yaml'),
         description='Full path to map yaml file'
     )
-
-    # declare_nav_params_arg = DeclareLaunchArgument(
-    #     'nav_params_file',
-    #     default_value=os.path.join(pkg_morosai_navigation, 'config', 'nav2_bringup_final.yaml'),
-    #     description='Full path to NAV2 params file'
-    # )
 
     declare_nav_params_arg = DeclareLaunchArgument(
         'nav_params_file',
@@ -72,7 +58,6 @@ def generate_launch_description():
         default_value='true',
         description='Automatically start NAV2 lifecycle nodes'
     )
-    
 
     # ============================================================
     # Launch Configuration
@@ -83,9 +68,30 @@ def generate_launch_description():
     use_rviz = LaunchConfiguration('use_rviz')
     autostart = LaunchConfiguration('autostart')
 
+    # Configurazione comune per i nodi NAV2
+    nav2_node_config = {
+        'namespace': '',
+        'output': 'screen',
+        'emulate_tty': True,  # Molto utile su Jetson per mantenere l'ordine dei log nei TTY
+        'parameters': [nav_params_file],
+        'respawn': True,
+        'respawn_delay': 2.0
+    }
+    
+    # Nodi Lifecycle principali per Nav2 (ordine logico)
+    lifecycle_nodes = [
+        'map_server',
+        'amcl',
+        'controller_server',
+        'planner_server',
+        'behavior_server',
+        'bt_navigator',
+        'waypoint_follower',
+        'velocity_smoother'
+    ]
+
     # ============================================================
-    # 1. SENSORS - sensors_up.launch.py
-    # Includes: TOF, LIDARs (front+rear), Optical Head, Robot State Publisher
+    # 1. SENSORS & FILTERING
     # ============================================================
     sensors_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -93,18 +99,13 @@ def generate_launch_description():
         )
     )
 
-    # ============================================================
-    # 1b. Filter merged laser scan inside the robot footprint
-    # /merged is already expressed in base_footprint by the merger.
-    # ============================================================
     laser_filter_node = Node(
         package='laser_filters',
         executable='scan_to_scan_filter_chain',
         name='scan_to_scan_filter_chain',
+        namespace='',
         output='screen',
-        parameters=[os.path.join(
-            pkg_morosai_navigation, 'config', 'laser_filters.yaml'
-        )],
+        parameters=[os.path.join(pkg_morosai_navigation, 'config', 'laser_filters.yaml')],
         remappings=[
             ('scan', '/merged'),
             ('scan_filtered', '/merged_filtered'),
@@ -112,55 +113,84 @@ def generate_launch_description():
     )
 
     # ============================================================
-    # 2. NAV2 Navigation Stack
+    # 2. NAV2 EXPLICIT LIFECYCLE NODES
     # ============================================================
-    nav2_bringup_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_nav2_bringup, 'launch', 'bringup_launch.py')
-        ),
-        launch_arguments={
-            'map': map_file,
-            'use_sim_time': use_sim_time,
-            'autostart': autostart,
-            'params_file': nav_params_file,
-            'use_composition': 'False'
-        }.items()
+    map_server = LifecycleNode(
+        package='nav2_map_server', executable='map_server', name='map_server',
+        namespace='', parameters=[nav_params_file, {'yaml_filename': map_file}], output='screen'
     )
-
-    # ============================================================
-    # 3. Navigation Topic Publisher
-    # Publishes: /agv_pose, /agv_path, /agv_v, /agv_qr, /agv_detect, /wheel_v, /agv_act, /agv_op
-    # ============================================================
-    nav_topic_publisher_node = Node(
-        package='morosai_navigation',
-        executable='mqtt_bridge_publisher.py',
-        name='mqtt_bridge_publisher',
-        output='screen',
-        parameters=[{
-            'use_sim_time': use_sim_time
-        }]
-    )
-
-    # ============================================================
-    # 4. Nav2 Collision Monitor (Safety Filter)
-    # ============================================================
-    collision_monitor_node = LifecycleNode(
-        package='nav2_collision_monitor',
-        executable='collision_monitor',
-        name='collision_monitor',
+    amcl = LifecycleNode(package='nav2_amcl', executable='amcl', name='amcl', **nav2_node_config)
+    controller_server = LifecycleNode(package='nav2_controller', executable='controller_server', name='controller_server', **nav2_node_config)
+    planner_server = LifecycleNode(package='nav2_planner', executable='planner_server', name='planner_server', **nav2_node_config)
+    behavior_server = LifecycleNode(package='nav2_behaviors', executable='behavior_server', name='behavior_server', **nav2_node_config)
+    bt_navigator = LifecycleNode(package='nav2_bt_navigator', executable='bt_navigator', name='bt_navigator', **nav2_node_config)
+    waypoint_follower = LifecycleNode(package='nav2_waypoint_follower', executable='waypoint_follower', name='waypoint_follower', **nav2_node_config)
+    
+    # Il velocity_smoother in standard Jazzy mappa l'output su cmd_vel_smoothed. 
+    # Assicurati che il tuo collision_monitor (che ascolta /cmd_vel_raw) legga dal topic giusto
+    velocity_smoother = LifecycleNode(
+        package='nav2_velocity_smoother', executable='velocity_smoother', name='velocity_smoother', 
         namespace='',
+        remappings=[('cmd_vel_smoothed', '/cmd_vel_raw')],
         output='screen',
         emulate_tty=True,
         parameters=[nav_params_file]
     )
 
+    # Lifecycle Manager per lo stack di navigazione (niente docking_server o route_server!)
+    nav2_lifecycle_manager = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_navigation',
+        namespace='',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'autostart': autostart,
+            'node_names': lifecycle_nodes
+        }]
+    )
+
     # ============================================================
-    # 4b. AprilTag Node
+    # 3. SAFETY & COLLISION MONITOR (Gestito dal proprio lifecycle)
     # ============================================================
+    collision_monitor_node = LifecycleNode(
+        package='nav2_collision_monitor',
+        executable='collision_monitor',
+        name='collision_monitor',
+        **nav2_node_config
+    )
+
+    lifecycle_manager_safety = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_safety',
+        namespace='',
+        output='screen',
+        parameters=[{
+            'autostart': autostart,
+            'node_names': ['collision_monitor'],
+            'bond_timeout': 10.0
+        }]
+    )
+
+    # ============================================================
+    # 4. EXTRAS & UTILITIES
+    # ============================================================
+    nav_topic_publisher_node = Node(
+        package='morosai_navigation',
+        executable='mqtt_bridge_publisher.py',
+        name='mqtt_bridge_publisher',
+        namespace='',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
     apriltag_node = Node(
         package='apriltag_ros',
         executable='apriltag_node',
         name='apriltag_node',
+        namespace='',
         remappings=[
             ('image_rect', '/gordon_tof/bgr'),
             ('camera_info', '/gordon_tof/camera_info'),
@@ -168,47 +198,38 @@ def generate_launch_description():
         parameters=[{
             'family': 'Standard52h13',
             'size': 0.088,
-            'detector.threads': 4,
-            'detector.decimate': 2.0,
+            'detector.threads': 8, # Jetson A78AE ha 12 core, dedichiamone 8 ad apriltag!
+            'detector.decimate': 1.0, 
             'qos_profile': "sensor_data"
         }],
         output='screen'
     )
 
-    # ============================================================
-    # 4c. Lifecycle Manager Dedicato per la Sicurezza
-    # ============================================================
-    lifecycle_manager_safety = Node(
-        package='nav2_lifecycle_manager',
-        executable='lifecycle_manager',
-        name='lifecycle_manager_safety',
-        output='screen',
-        parameters=[{
-            'autostart': True,
-            'node_names': ['collision_monitor'],
-            'bond_timeout': 10.0
-        }]
-    )
-
-    # ============================================================
-    # 4d. Map Updater Node
-    # ============================================================
     map_updater_node = Node(
         package='morosai_navigation',
         executable='map_updater_node.py',
         name='map_updater_node',
+        namespace='',
         output='screen'
     )
 
-    # ============================================================
-    # 5. RViz2 Visualization
-    # ============================================================
+    ekf_config_file = os.path.join(pkg_morosai_navigation, 'config', 'ekf.yaml')
+    ekf_filter_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        namespace='',
+        output='screen',
+        parameters=[ekf_config_file, {'use_sim_time': use_sim_time}],
+        remappings=[('/odometry/filtered', '/odometry/filtered')]
+    )
+
     rviz_config_file = os.path.join(pkg_morosai_description, 'rviz', 'display_NAV2.rviz')
-    
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
+        namespace='',
         arguments=['-d', rviz_config_file],
         output='screen',
         respawn=True,
@@ -216,39 +237,36 @@ def generate_launch_description():
     )
 
     # ============================================================
-    # 6. Robot Localization (EKF Node)
-    # Fuses wheel odom, T265 pose, and T265 gyro/accel
-    # ============================================================
-    ekf_config_file = os.path.join(pkg_morosai_navigation, 'config', 'ekf.yaml')
-    
-    ekf_filter_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[ekf_config_file, {'use_sim_time': use_sim_time}],
-        remappings=[('/odometry/filtered', '/odometry/filtered')]
-    )
-
-    # ============================================================
     # Build Launch Description
     # ============================================================
     return LaunchDescription([
-        # Declare arguments
         declare_map_arg,
         declare_nav_params_arg,
         declare_use_sim_time_arg,
         declare_use_rviz_arg,
         declare_autostart_arg,
 
-        # Launch components
         sensors_launch,
         laser_filter_node,
         ekf_filter_node,
-        nav2_bringup_launch,
+
+        # NAV2 EXPLICIT
+        map_server,
+        amcl,
+        controller_server,
+        planner_server,
+        behavior_server,
+        bt_navigator,
+        waypoint_follower,
+        velocity_smoother,
+        nav2_lifecycle_manager,
+
+        # SAFETY
+        collision_monitor_node,
+        lifecycle_manager_safety,
+
+        # EXTRAS
         nav_topic_publisher_node,
-        # collision_monitor_node,
-        # lifecycle_manager_safety,
         apriltag_node,
         map_updater_node,
         rviz_node

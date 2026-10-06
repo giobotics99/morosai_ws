@@ -31,7 +31,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: LaserScan
+    SyncSource: ""
   - Class: nav2_rviz_plugins/Navigation 2
     Name: Navigation 2
 Visualization Manager:
@@ -57,6 +57,8 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: true
@@ -99,26 +101,25 @@ Visualization Manager:
         map:
           odom:
             base_footprint:
-              base_link:
-                lidar_front_link:
-                  lidar_front_link_calibrated:
-                    {}
-                lidar_rear_link:
-                  lidar_rear_link_calibrated:
-                    {}
-                optical_head_link:
+              {}
+            base_link:
+              lidar_front_link:
+                {}
+              lidar_rear_link:
+                {}
+              optical_head_link:
+                {}
+              tof_link:
+                tof_optical_frame:
                   {}
-                tof_link:
-                  tof_optical_frame:
-                    {}
-                wheel_front_left:
-                  {}
-                wheel_front_right:
-                  {}
-                wheel_rear_left:
-                  {}
-                wheel_rear_right:
-                  {}
+              wheel_front_left:
+                {}
+              wheel_front_right:
+                {}
+              wheel_rear_left:
+                {}
+              wheel_rear_right:
+                {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -132,20 +133,73 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /robot_description
-      Enabled: false
+      Enabled: true
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lidar_front_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lidar_rear_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        optical_head_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tof_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tof_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wheel_front_left:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_front_right:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_rear_left:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wheel_rear_right:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
-      Value: false
+      Value: true
       Visual Enabled: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -182,6 +236,8 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Alpha: 0.699999988079071
+      Binary representation: false
+      Binary threshold: 100
       Class: rviz_default_plugins/Map
       Color Scheme: map
       Draw Behind: false
@@ -242,7 +298,6 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: System Default
-        Filter size: 10
         History Policy: System Default
         Reliability Policy: System Default
         Value: /gordon_tof/pointcloud
@@ -276,7 +331,6 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /local_costmap/voxel_grid
@@ -284,6 +338,8 @@ Visualization Manager:
       Use rainbow: true
       Value: false
     - Alpha: 0.699999988079071
+      Binary representation: false
+      Binary threshold: 100
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
       Draw Behind: false
@@ -305,6 +361,8 @@ Visualization Manager:
       Use Timestamp: false
       Value: true
     - Alpha: 0.699999988079071
+      Binary representation: false
+      Binary threshold: 100
       Class: rviz_default_plugins/Map
       Color Scheme: map
       Draw Behind: false
@@ -380,7 +438,6 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: System Default
-        Filter size: 10
         History Policy: System Default
         Reliability Policy: System Default
         Value: /virtual_corridor_cloud
@@ -428,7 +485,6 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gordon_tof/pointcloud_filtered
@@ -495,7 +551,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 6.133797645568848
+      Distance: 25.256120681762695
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -510,10 +566,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.08979659527540207
+      Pitch: 0.2847965359687805
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 3.042384386062622
+      Yaw: 3.4673893451690674
     Saved: ~
 Window Geometry:
   Displays:
@@ -525,7 +581,7 @@ Window Geometry:
     collapsed: false
   Navigation 2:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001840000035ffc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001b500000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003d0000035f000001560100001cfa000000010100000002fb00000018004e0061007600690067006100740069006f006e002000320100000000ffffffff0000011600fffffffb000000100044006900730070006c0061007900730100000000000002270000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d006100670065020000053d00000123000001840000024afb0000000a0049006d006100670065020000025d0000012b0000030f0000020c000000010000010f0000035ffc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000035f000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073a00000039fc0100000002fb0000000800540069006d006501000000000000073a000002fb00fffffffb0000000800540069006d00650100000000000004500000000000000000000005b00000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001840000035ffc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001b500000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003d0000035f000001fc0100001cfa000000010100000002fb00000018004e0061007600690067006100740069006f006e002000320100000000ffffffff0000012900fffffffb000000100044006900730070006c0061007900730100000000000002270000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d006100670065020000053d00000123000001840000024afb0000000a0049006d006100670065020000025d0000012b0000030f0000020c000000010000010f0000035ffc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000035f000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073a00000039fc0100000002fb0000000800540069006d006501000000000000073a0000026600fffffffb0000000800540069006d00650100000000000004500000000000000000000005b00000035f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -536,4 +592,4 @@ Window Geometry:
     collapsed: true
   Width: 1850
   X: 70
-  Y: 27
+  Y: 32

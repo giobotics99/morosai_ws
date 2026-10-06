@@ -1,0 +1,405 @@
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    alpha1: 0.15
+    alpha2: 0.15
+    alpha3: 0.15
+    alpha4: 0.15
+    alpha5: 0.15
+    base_frame_id: "base_footprint"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beamskip: true    #changed to ignore dynamic obstacles
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 25.0
+    laser_min_range: -1.0
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
+    resample_interval: 1
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+    save_pose_rate: 0.5
+    sigma_hit: 0.2
+    tf_broadcast: true
+    transform_tolerance: 0.4
+    update_min_a: 0.1 #decresed as suggested
+    update_min_d: 0.1 #decresed as suggested
+    z_hit: 0.5
+    z_max: 0.05
+    z_rand: 0.5
+    z_short: 0.5
+    scan_topic: merged_filtered
+    set_initial_pose: True
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_yaw: 0.0
+
+map_server:
+  ros__parameters:
+    use_sim_time: False
+    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/map_fema_28_09_26.yaml"
+
+map_saver:
+  ros__parameters:
+    use_sim_time: False
+    save_map_timeout: 5.0
+    free_thresh_default: 0.25
+    occupied_thresh_default: 0.65
+    map_subscribe_transient_local: True
+
+planner_server:
+  ros__parameters:
+    planner_plugins: ["GridBased"]
+
+    GridBased:
+      plugin: "nav2_smac_planner::SmacPlannerLattice" # In Iron and older versions, "/" was used instead of "::"
+      allow_unknown: true                 # Allow traveling in unknown space
+      tolerance: 0.25                     # dist-to-goal heuristic cost (distance) for valid tolerance endpoints if exact goal cannot be found.
+      max_iterations: 1000000             # Maximum total iterations to search for before failing (in case unreachable), set to -1 to disable
+      max_on_approach_iterations: 1000    # Maximum number of iterations after within tolerances to continue to try to find exact solution
+      max_planning_time: 5.0              # Max time in s for planner to plan, smooth
+      analytic_expansion_ratio: 3.5       # The ratio to attempt analytic expansions during search for final approach.
+      analytic_expansion_max_length: 3.0  # For Hybrid/Lattice nodes The maximum length of the analytic expansion to be considered valid to prevent unsafe shortcutting
+      analytic_expansion_max_cost: 200.0  # The maximum single cost for any part of an analytic expansion to contain and be valid, except when necessary on approach to goal
+      analytic_expansion_max_cost_override: false  #  Whether or not to override the maximum cost setting if within critical distance to goal (ie probably required)
+      reverse_penalty: 2.0                # Penalty to apply if motion is reversing, must be => 1
+      change_penalty: 0.05                # Penalty to apply if motion is changing directions (L to R), must be >= 0
+      non_straight_penalty: 1.05          # Penalty to apply if motion is non-straight, must be => 1
+      cost_penalty: 2.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
+      rotation_penalty: 5.0               # Penalty to apply to in-place rotations, if minimum control set contains them
+      retrospective_penalty: 0.015
+      lattice_filepath: "/home/morosai/morosai_ws/src/morosai_navigation/config/smac_lattice/my_lattice.json"                # The filepath to the state lattice graph
+      lookup_table_size: 20.0             # Size of the dubin/reeds-sheep distance window to cache, in meters.
+      cache_obstacle_heuristic: false     # Cache the obstacle map dynamic programming distance expansion heuristic between subsequent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.
+      allow_reverse_expansion: true      # If true, allows the robot to use the primitives to expand in the mirrored opposite direction of the current robot's orientation (to reverse).
+      smooth_path: True                   # If true, does a simple and quick smoothing post-processing to the path
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
+        do_refinement: true
+        refinement_num: 2
+
+behavior_server:
+  ros__parameters:
+    local_costmap_topic: local_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_costmap_topic: global_costmap/costmap_raw
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    assisted_teleop:
+      plugin: "nav2_behaviors::AssistedTeleop"
+    global_frame: map
+    local_frame: odom
+    robot_base_frame: base_footprint
+    transform_tolerance: 0.4
+    use_sim_time: false
+    # Limitazione drastica della rotazione di recupero dello chassis
+    max_rotational_vel: 0.6
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 0.8
+    enable_stamped_cmd_vel: false # False for Jazzy or older by default
+
+controller_server:
+  ros__parameters:
+    use_sim_time: false
+    controller_frequency: 20.0
+    costmap_update_timeout: 0.30
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+    use_realtime_priority: false
+
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      # Velocità lineari ridotte ed eque per marcia avanti/indietro
+      min_vel_x: -0.6
+      max_vel_x: 0.6
+      # Mantenere a 0.0 se differenziale puro, altrimenti bassi valori se omni
+      min_vel_y: -0.6
+      max_vel_y: 0.6
+      # Rotazione molto lenta e controllata
+      max_vel_theta: 0.40
+      min_speed_xy: 0.01
+      max_speed_xy: 0.5
+      min_speed_theta: -0.30
+      # Rampe di accelerazione estremamente dolci (ridotte a 0.1 m/s²)
+      acc_lim_x: 0.2
+      acc_lim_y: 0.2
+      acc_lim_theta: 0.2
+      # Decelerazione controllata per non far sobbalzare la struttura da 265kg
+      decel_lim_x: -0.2
+      decel_lim_y: -0.2
+      decel_lim_theta: -0.2
+      # Incrementiamo i campionamenti temporali per traiettorie più stabili
+      vx_samples: 25
+      vy_samples: 25
+      vtheta_samples: 25
+      sim_time: 2.5 # Aumentato per guardare più avanti data la bassa velocità. A 0.6 m/s, simula avanti di 1.5 metri.
+      linear_granularity: 0.03
+      angular_granularity: 0.02
+      transform_tolerance: 0.4
+      xy_goal_tolerance: 0.10 # Tolleranza sul goal più stringente e precisa
+      yaw_goal_tolerance: 0.10
+      trans_stopped_velocity: 0.01
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      critics: ["BaseObstacle", "ObstacleFootprintCritic", "RotateToGoal", "Oscillation", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      ObstacleFootprintCritic.scale: 12.0 # Aumentato il peso degli ostacoli vicini
+      BaseObstacle.scale: 12.0
+      PathAlign.scale: 12.0
+      PathAlign.forward_point_distance: 0.4
+      GoalAlign.scale: 20.0
+      GoalAlign.forward_point_distance: 0.3
+      PathDist.scale: 6.0
+      GoalDist.scale: 12.0
+      RotateToGoal.scale: 8.0
+      RotateToGoal.slowing_factor: 6.0 # Frena in rotazione in modo molto più progressivo
+      RotateToGoal.lookahead_time: -1.0
+
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: False
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: /odometry/filtered
+    bt_loop_duration: 15
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    # default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
+    navigators: ["navigate_to_pose", "navigate_through_poses"]
+    navigate_to_pose:
+      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
+    navigate_through_poses:
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+    
+    error_code_names:
+      - compute_path_error_code
+      - follow_path_error_code
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_footprint
+      use_sim_time: False
+      rolling_window: true
+      width: 5      # Increased from 3.0
+      height: 5     # Increased from 3.0
+      resolution: 0.05
+      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
+      transform_tolerance: 0.4
+      plugins: ["static_layer", "stvl_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: true
+        minimal_group_size: 5
+        group_connectivity_type: 8
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        inflation_radius: 1.0   # Increased from 0.55
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        scan:
+          topic: /merged_filtered
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+      stvl_layer:
+        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        enabled:                  true
+        voxel_decay:              1.0
+        decay_model:              0
+        voxel_size:               0.05
+        track_unknown_space:      true
+        mark_threshold:           8  #changed
+        update_footprint_enabled: true
+        combination_method:       1
+        origin_z:                 0.0
+        publish_voxel_map:        true
+        transform_tolerance:      0.2
+        mapping_mode:             false
+        map_save_duration:        60.0
+        observation_sources: gordon_tof virtual_corridor
+        footprint_clearing_enabled: true
+        gordon_tof:
+          topic: "/gordon_tof/pointcloud_filtered"
+          data_type: "PointCloud2"
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+        virtual_corridor:
+          topic: "/virtual_corridor_cloud"
+          data_type: "PointCloud2"
+          max_obstacle_height: 0.5
+          marking: True
+          clearing: True
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      always_send_full_costmap: True
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      footprint_padding: 0.05 # Adds a 5cm "ghost" buffer around your robot
+      global_frame: map
+      robot_base_frame: base_footprint
+      use_sim_time: False
+      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
+      resolution: 0.05
+      track_unknown_space: false
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        scan:
+          topic: /merged_filtered
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: true
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.0
+        inflation_radius: 1.1   # Increased from 0.55
+      always_send_full_costmap: True
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: False
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "CLOSED_LOOP"
+    # Allineato ai limiti del DWB
+    max_velocity: [0.6, 0.6, 0.6]
+    min_velocity: [-0.6, -0.6, -0.6]
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 0.6
+    # Rampe di accelerazione/decelerazione identiche o leggermente inferiori al DWB
+    max_accel: [0.2, 0.2, 0.2]
+    max_decel: [-0.2, -0.2, -0.2]
+    odom_topic: "/odometry/filtered"
+    odom_duration: 0.1
+
+waypoint_follower:
+  ros__parameters:
+    loop_rate: 20
+    stop_on_failure: false
+    action_server_result_timeout: 900.0
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+
+
+collision_monitor:
+  ros__parameters:
+    use_sim_time: False
+    enabled: True
+    base_frame_id: "base_footprint"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "/cmd_vel_raw"
+    cmd_vel_out_topic: "/cmd_vel" # This goes directly to your hardware base
+    transform_tolerance: 0.9
+    source_timeout: 1.0
+    stop_pub_timeout: 5.0
+    enable_stamped_cmd_vel: False # Matched to your velocity_smoother setting
+    
+    # Define safety layers (ordered from outermost/least aggressive to innermost/most aggressive)
+    polygons: ["polygon_slow", "polygon_stop"]
+    
+    # 1. SLOWDOWN ZONE
+    polygon_slow:
+      type: "polygon"
+      points: "[[0.856, 0.7825], [0.856, -0.7825], [-0.856, -0.7825], [-0.856, 0.7825]]"
+      action_type: "slowdown"
+      scale_factor: 0.9 
+      max_points: 150     
+      visualize: True
+      polygon_pub_topic: "polygon_slow"
+
+    # 2. EMERGENCY STOP ZONE
+    polygon_stop:
+      type: "polygon"
+      points: "[[0.726, 0.6525], [0.726, -0.6525], [-0.726, -0.6525], [-0.726, 0.6525]]"
+      action_type: "stop"
+      max_points: 100     
+      visualize: True
+      polygon_pub_topic: "polygon_stop"
+
+
+    # Sensor data streaming links
+    observation_sources: ["scan"]
+    # observation_sources: ["scan", "gordon_tof"]
+    
+    scan:
+      type: "scan"
+      topic: "/merged_filtered"
+
+docking_server:
+  ros__parameters:
+    use_sim_time: False
+    controller_frequency: 10.0
+    dock_plugins: ['simple_dock']
+    simple_dock:
+      plugin: 'opennav_docking::SimpleChargingDock'
+      docking_threshold: 0.05
+      staging_x_offset: -0.5
+      use_external_detection: false

@@ -149,15 +149,10 @@ def generate_launch_description():
         ),
 
         Node(
-            package='realsense2_camera',
-            executable='realsense2_camera_node',
-            name='camera',
-            namespace='camera',
-            output='screen',
-            parameters=[{
-                'enable_pose': True,
-                'device_type': 't265'
-            }]
+            package='realsense_t265_bridge',
+            executable='realsense_t265_node',
+            name='realsense_t265_node',
+            output='screen'
         )
 
     ])

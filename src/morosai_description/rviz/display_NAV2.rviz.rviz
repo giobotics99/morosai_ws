@@ -63,11 +63,7 @@ Visualization Manager:
           Value: true
         lidar_front_link:
           Value: true
-        lidar_front_link_calibrated:
-          Value: true
         lidar_rear_link:
-          Value: true
-        lidar_rear_link_calibrated:
           Value: true
         map:
           Value: true
