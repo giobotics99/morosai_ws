@@ -115,11 +115,11 @@ behavior_server:
     robot_base_frame: base_footprint
     transform_tolerance: 0.4
     use_sim_time: false
-    # Limitazione drastica della rotazione di recupero dello chassis
-    max_rotational_vel: 0.6
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 0.8
-    enable_stamped_cmd_vel: false # False for Jazzy or older by default
+    # Limitazione ridotta per rotazione di recupero del pesante chassis da 290kg
+    max_rotational_vel: 0.35
+    min_rotational_vel: 0.2
+    rotational_acc_lim: 0.4
+    enable_stamped_cmd_vel: false
 
 controller_server:
   ros__parameters:
@@ -127,7 +127,7 @@ controller_server:
     controller_frequency: 20.0
     costmap_update_timeout: 0.30
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
+    min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     progress_checker_plugin: "progress_checker"
@@ -138,7 +138,7 @@ controller_server:
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      movement_time_allowance: 15.0
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
@@ -147,41 +147,39 @@ controller_server:
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      # Velocità lineari ridotte ed eque per marcia avanti/indietro
-      min_vel_x: -0.6
-      max_vel_x: 0.6
-      # Mantenere a 0.0 se differenziale puro, altrimenti bassi valori se omni
-      min_vel_y: -0.6
-      max_vel_y: 0.6
-      # Rotazione molto lenta e controllata
-      max_vel_theta: 0.40
+      # Velocità lineari ridotte per robot omni da 290kg
+      min_vel_x: -0.4
+      max_vel_x: 0.4
+      min_vel_y: -0.4
+      max_vel_y: 0.4
+      # Rotazione lenta e controllata per evitare slittamenti
+      max_vel_theta: 0.25
       min_speed_xy: 0.01
-      max_speed_xy: 0.5
-      min_speed_theta: -0.30
-      # Rampe di accelerazione estremamente dolci (ridotte a 0.1 m/s²)
-      acc_lim_x: 0.2
-      acc_lim_y: 0.2
-      acc_lim_theta: 0.2
-      # Decelerazione controllata per non far sobbalzare la struttura da 265kg
-      decel_lim_x: -0.2
-      decel_lim_y: -0.2
-      decel_lim_theta: -0.2
-      # Incrementiamo i campionamenti temporali per traiettorie più stabili
+      max_speed_xy: 0.35
+      min_speed_theta: -0.2
+      # Rampe di accelerazione molto dolci per 290kg
+      acc_lim_x: 0.12
+      acc_lim_y: 0.12
+      acc_lim_theta: 0.15
+      # Decelerazione controllata per evitare sobbalzi o slittamenti dei rulli omni
+      decel_lim_x: -0.12
+      decel_lim_y: -0.12
+      decel_lim_theta: -0.15
       vx_samples: 25
       vy_samples: 25
       vtheta_samples: 25
-      sim_time: 2.5 # Aumentato per guardare più avanti data la bassa velocità. A 0.6 m/s, simula avanti di 1.5 metri.
+      sim_time: 3.0 # Aumentato ulteriormente per prevedere meglio la traiettoria a basse velocità
       linear_granularity: 0.03
       angular_granularity: 0.02
       transform_tolerance: 0.4
-      xy_goal_tolerance: 0.10 # Tolleranza sul goal più stringente e precisa
+      xy_goal_tolerance: 0.10
       yaw_goal_tolerance: 0.10
       trans_stopped_velocity: 0.01
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["BaseObstacle", "ObstacleFootprintCritic", "RotateToGoal", "Oscillation", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      ObstacleFootprintCritic.scale: 12.0 # Aumentato il peso degli ostacoli vicini
-      BaseObstacle.scale: 12.0
+      ObstacleFootprintCritic.scale: 14.0 
+      BaseObstacle.scale: 14.0
       PathAlign.scale: 12.0
       PathAlign.forward_point_distance: 0.4
       GoalAlign.scale: 20.0
@@ -189,7 +187,7 @@ controller_server:
       PathDist.scale: 6.0
       GoalDist.scale: 12.0
       RotateToGoal.scale: 8.0
-      RotateToGoal.slowing_factor: 6.0 # Frena in rotazione in modo molto più progressivo
+      RotateToGoal.slowing_factor: 6.0
       RotateToGoal.lookahead_time: -1.0
 
 
@@ -202,7 +200,6 @@ bt_navigator:
     bt_loop_duration: 15
     default_server_timeout: 20
     wait_for_service_timeout: 1000
-    # default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
@@ -222,10 +219,9 @@ local_costmap:
       robot_base_frame: base_footprint
       use_sim_time: False
       rolling_window: true
-      width: 5      # Increased from 3.0
-      height: 5     # Increased from 3.0
+      width: 5
+      height: 5
       resolution: 0.05
-      # footprint: "[[0.685, 0.59], [0.685, -0.59], [-0.685, -0.59], [-0.685, 0.59]]"
       footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
       transform_tolerance: 0.4
       plugins: ["static_layer", "stvl_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
@@ -237,7 +233,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 1.0   # Increased from 0.55
+        inflation_radius: 1.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -259,7 +255,7 @@ local_costmap:
         decay_model:              0
         voxel_size:               0.05
         track_unknown_space:      true
-        mark_threshold:           8  #changed
+        mark_threshold:           8
         update_footprint_enabled: true
         combination_method:       1
         origin_z:                 0.0
@@ -291,11 +287,10 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
-      footprint_padding: 0.05 # Adds a 5cm "ghost" buffer around your robot
+      footprint_padding: 0.05
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: False
-      # footprint: "[[0.685, 0.59], [0.685, -0.59], [-0.685, -0.59], [-0.685, 0.59]]"
       footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
       resolution: 0.05
       track_unknown_space: false
@@ -321,7 +316,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 2.0
-        inflation_radius: 1.1   # Increased from 0.55
+        inflation_radius: 1.1
       always_send_full_costmap: True
 
 velocity_smoother:
@@ -330,14 +325,14 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "CLOSED_LOOP"
-    # Allineato ai limiti del DWB
-    max_velocity: [0.6, 0.6, 0.6]
-    min_velocity: [-0.6, -0.6, -0.6]
+    # Allineato ai limiti ridotti del DWB
+    max_velocity: [0.4, 0.4, 0.25]
+    min_velocity: [-0.4, -0.4, -0.25]
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 0.6
-    # Rampe di accelerazione/decelerazione identiche o leggermente inferiori al DWB
-    max_accel: [0.2, 0.2, 0.2]
-    max_decel: [-0.2, -0.2, -0.2]
+    # Rampe di accelerazione/decelerazione del velocity smoother coordinate
+    max_accel: [0.12, 0.12, 0.15]
+    max_decel: [-0.12, -0.12, -0.15]
     odom_topic: "/odom"
     odom_duration: 0.1
 
@@ -360,40 +355,34 @@ collision_monitor:
     base_frame_id: "base_footprint"
     odom_frame_id: "odom"
     cmd_vel_in_topic: "/cmd_vel_raw"
-    cmd_vel_out_topic: "/cmd_vel" # This goes directly to your hardware base
+    cmd_vel_out_topic: "/cmd_vel"
     transform_tolerance: 0.9
     source_timeout: 1.0
     stop_pub_timeout: 5.0
-    enable_stamped_cmd_vel: False # Matched to your velocity_smoother setting
+    enable_stamped_cmd_vel: False
     
-    # Define safety layers (ordered from outermost/least aggressive to innermost/most aggressive)
     polygons: ["polygon_slow", "polygon_stop"]
     
-    # 1. SLOWDOWN ZONE
+    # 1. SLOWDOWN ZONE (più ampia per dare tempo a 290kg di rallentare)
     polygon_slow:
       type: "polygon"
-      # points: "[[0.856, 0.7825], [0.856, -0.7825], [-0.856, -0.7825], [-0.856, 0.7825]]"
       points: "[[0.925, 0.7975], [0.925, -0.7975], [-0.925, -0.7975], [-0.925, 0.7975]]"
       action_type: "slowdown"
-      scale_factor: 0.9 
+      scale_factor: 0.85 
       min_points: 150     
       visualize: True
       polygon_pub_topic: "polygon_slow"
 
-    # 2. EMERGENCY STOP ZONE
+    # 2. EMERGENCY STOP ZONE (margine di sicurezza aumentato)
     polygon_stop:
       type: "polygon"
-      # points: "[[0.726, 0.6525], [0.726, -0.6525], [-0.726, -0.6525], [-0.726, 0.6525]]"
       points: "[[0.795, 0.6775], [0.795, -0.6775], [-0.795, -0.6775], [-0.795, 0.6775]]"
       action_type: "stop"
       min_points: 100     
       visualize: True
       polygon_pub_topic: "polygon_stop"
 
-
-    # Sensor data streaming links
     observation_sources: ["scan"]
-    # observation_sources: ["scan", "gordon_tof"]
     
     scan:
       type: "scan"

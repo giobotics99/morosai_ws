@@ -39,9 +39,11 @@ amcl:
     z_short: 0.5
     scan_topic: merged_filtered
     set_initial_pose: True
-    initial_pose_x: 0.0
-    initial_pose_y: 0.0
-    initial_pose_yaw: 0.0
+    initial_pose:
+      x: -3.0
+      y: 1.0
+      z: 0.0
+      yaw: 0.0
 
 map_server:
   ros__parameters:
@@ -223,7 +225,8 @@ local_costmap:
       width: 5      # Increased from 3.0
       height: 5     # Increased from 3.0
       resolution: 0.05
-      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
+      # footprint: "[[0.685, 0.59], [0.685, -0.59], [-0.685, -0.59], [-0.685, 0.59]]"
+      footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
       transform_tolerance: 0.4
       plugins: ["static_layer", "stvl_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       denoise_layer:
@@ -292,7 +295,8 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: False
-      footprint: "[[0.656, 0.5825], [0.656, -0.5825], [-0.656, -0.5825], [-0.656, 0.5825]]"
+      # footprint: "[[0.685, 0.59], [0.685, -0.59], [-0.685, -0.59], [-0.685, 0.59]]"
+      footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
       resolution: 0.05
       track_unknown_space: false
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -368,7 +372,8 @@ collision_monitor:
     # 1. SLOWDOWN ZONE
     polygon_slow:
       type: "polygon"
-      points: "[[0.856, 0.7825], [0.856, -0.7825], [-0.856, -0.7825], [-0.856, 0.7825]]"
+      # points: "[[0.856, 0.7825], [0.856, -0.7825], [-0.856, -0.7825], [-0.856, 0.7825]]"
+      points: "[[0.925, 0.7975], [0.925, -0.7975], [-0.925, -0.7975], [-0.925, 0.7975]]"
       action_type: "slowdown"
       scale_factor: 0.9 
       min_points: 150     
@@ -378,7 +383,8 @@ collision_monitor:
     # 2. EMERGENCY STOP ZONE
     polygon_stop:
       type: "polygon"
-      points: "[[0.726, 0.6525], [0.726, -0.6525], [-0.726, -0.6525], [-0.726, 0.6525]]"
+      # points: "[[0.726, 0.6525], [0.726, -0.6525], [-0.726, -0.6525], [-0.726, 0.6525]]"
+      points: "[[0.795, 0.6775], [0.795, -0.6775], [-0.795, -0.6775], [-0.795, 0.6775]]"
       action_type: "stop"
       min_points: 100     
       visualize: True

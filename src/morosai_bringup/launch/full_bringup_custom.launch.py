@@ -37,7 +37,7 @@ def generate_launch_description():
 
     declare_nav_params_arg = DeclareLaunchArgument(
         'nav_params_file',
-        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy.yaml'),
+        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy_vel.yaml'),
         description='Full path to NAV2 params file'
     )
 
