@@ -152,7 +152,8 @@ def generate_launch_description():
             package='realsense_t265_bridge',
             executable='realsense_t265_node',
             name='realsense_t265_node',
-            output='screen'
+            output='screen',
+            respawn=True
         )
 
     ])

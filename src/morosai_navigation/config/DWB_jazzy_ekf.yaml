@@ -196,7 +196,7 @@ bt_navigator:
     use_sim_time: False
     global_frame: map
     robot_base_frame: base_footprint
-    odom_topic: /odom
+    odom_topic: /odometry/filtered
     bt_loop_duration: 15
     default_server_timeout: 20
     wait_for_service_timeout: 1000
@@ -334,7 +334,7 @@ velocity_smoother:
     # Rampe di accelerazione/decelerazione identiche o leggermente inferiori al DWB
     max_accel: [0.2, 0.2, 0.2]
     max_decel: [-0.2, -0.2, -0.2]
-    odom_topic: "/odom"
+    odom_topic: "/odometry/filtered"
     odom_duration: 0.1
 
 waypoint_follower:

@@ -248,7 +248,7 @@ def generate_launch_description():
 
         sensors_launch,
         laser_filter_node,
-        ekf_filter_node,
+        # ekf_filter_node,
 
         # NAV2 EXPLICIT
         map_server,
