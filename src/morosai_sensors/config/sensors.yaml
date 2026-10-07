@@ -9,13 +9,14 @@ optical_head:
   node_name: optical_head_node
   namespace: optical_head
   frame_id: optical_head_link
-  serial_port: "/dev/ttyUSB1"
+  serial_port: "/dev/ttyACM0"
   # serial_port: "/dev/pgv100"
 
 lidar_front:
   node_name: sllidar_front
   namespace: lidar_front
   serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_f333c9419ca7234b9f2cfdddac5a97a8-if00-port0"
+  #serial_port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_8518796e58ffb144875d33c7ca8065af-if00-port0"
   serial_baudrate: 256000
   frame_id: lidar_front_link
   scan_mode: "Sensitivity"

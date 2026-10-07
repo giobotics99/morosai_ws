@@ -32,7 +32,7 @@ def generate_launch_description():
     # === Load Sensor Config ===
     # Switch to 'config/sensors.yaml' for the standard robot (camera upside-down).
     # Switch to 'config/sensors_cnr.yaml' for the CNR robot (camera upright).
-    config = load_yaml('morosai_sensors', 'config/sensors_cnr.yaml')
+    config = load_yaml('morosai_sensors', 'config/sensors.yaml')
 
     tof_cfg          = config['tof_camera']
     lidar_front_cfg  = config['lidar_front']

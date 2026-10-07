@@ -37,7 +37,7 @@ def generate_launch_description():
 
     declare_nav_params_arg = DeclareLaunchArgument(
         'nav_params_file',
-        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy_vel.yaml'),
+        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy_ekf.yaml'),
         description='Full path to NAV2 params file'
     )
 
@@ -248,9 +248,10 @@ def generate_launch_description():
 
         sensors_launch,
         laser_filter_node,
-        # ekf_filter_node,
+        ekf_filter_node,
 
         # NAV2 EXPLICIT
+        nav2_lifecycle_manager,
         map_server,
         amcl,
         controller_server,
@@ -259,7 +260,6 @@ def generate_launch_description():
         bt_navigator,
         waypoint_follower,
         velocity_smoother,
-        nav2_lifecycle_manager,
 
         # SAFETY
         collision_monitor_node,

@@ -20,16 +20,16 @@ ekf_filter_node:
     odom0_differential: false
     odom0_relative: false
 
-    # 2. Posa T265: usa solo la posizione X, Y e l'orientamento Yaw per correggere la deriva
-    pose0: /camera/pose/sample
-    pose0_config: [true,  true,  false,
-                   false, false, true,
-                   false, false, false,
-                   false, false, false,
-                   false, false, false]
-    pose0_differential: false
-    pose0_relative: false
-    pose0_queue_size: 10
+    # # 2. Posa T265: usa solo la posizione X, Y e l'orientamento Yaw per correggere la deriva
+    # pose0: /camera/pose/sample
+    # pose0_config: [true,  true,  false,
+    #                false, false, true,
+    #                false, false, false,
+    #                false, false, false,
+    #                false, false, false]
+    # pose0_differential: false
+    # pose0_relative: false
+    # pose0_queue_size: 10
 
     # 3. Giroscopio T265: eccellente per la velocità di rotazione (Yaw rate)
     imu0: /gyro/sample
