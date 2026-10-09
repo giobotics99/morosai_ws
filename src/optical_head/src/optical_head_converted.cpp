@@ -289,7 +289,7 @@ public:
 
             pmsg.header.stamp = this->now();
             pmsg.header.frame_id = frame_id_;
-            pmsg.angle = agv_ang_des / 10.0f; // convert to degrees as in original node
+            pmsg.angle = agv_ang_des; 
             pmsg.x_pos = agv_x_pos_des;
             pmsg.y_pos = agv_y_pos_des;
             pmsg.direction = selected_dir;

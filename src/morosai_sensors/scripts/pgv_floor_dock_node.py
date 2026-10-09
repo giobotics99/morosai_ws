@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from enum import Enum
-
 import rclpy
 from action_msgs.srv import CancelGoal
 from geometry_msgs.msg import Twist
@@ -11,347 +10,319 @@ from std_msgs.msg import Bool, String
 
 
 class DockState(Enum):
-    # Stati principali della macchina di docking:
-    # IDLE = attesa di un tag valido, ALIGN = heading e centraggio su y,
-    # APPROACH = avanzamento nella direzione positiva di x.
     IDLE = 0
-    ALIGN = 1
-    APPROACH = 2
-    DOCKED = 3
+    DOCKING = 1
+    DOCKED = 2
 
 
 class PgvFloorDockNode(Node):
-    """Interrompe Nav2 e muove il robot usando i dati del PGV sul pavimento."""
+    """Nodo di docking olonomico reattivo con rampa di accelerazione e velocità contenute per PGV."""
 
     def __init__(self):
         super().__init__('pgv_floor_dock_node')
 
-        # Topic del sensore PGV e topic su cui inviare i comandi di velocita.
-        # /cmd_vel_raw e' l'ingresso del collision monitor nel setup del robot.
-        self.declare_parameter('pgv_topic', '/pgv100_scan')
-        self.declare_parameter('cmd_vel_topic', '/cmd_vel_raw')
-
-        # Servizio standard di Nav2 per cancellare gli obiettivi attivi.
+        # Topic e parametri generali
+        self.declare_parameter('pgv_topic', '/optical_head/pgv100_scan')
+        self.declare_parameter('cmd_vel_topic', '/cmd_vel')
         self.declare_parameter('cancel_service', '/navigate_to_pose/_action/cancel_goal')
-        # Comando scheduler: true abilita/riarma, false disabilita il docking.
         self.declare_parameter('dock_command_topic', '/agv_dock')
 
-        # Il docking parte quando x e' nell'intervallo [200, 800] mm.
+        # Quota X di partenza e arresto (in mm)
         self.declare_parameter('x_start_mm', 4800.0)
-        self.declare_parameter('x_stop_mm', 2300.0)
-        # Direzione docking: True per retromarcia (linear.x < 0), False per marcia avanti.
+        self.declare_parameter('x_stop_mm', 1150.0)
         self.declare_parameter('reverse_docking', True)
 
-        # Tolleranza di centraggio laterale e limiti di velocita.
-        self.declare_parameter('y_tolerance_mm', 15.0)
-        self.declare_parameter('max_forward_speed', 0.15)
-        self.declare_parameter('max_lateral_speed', 0.04)
-        self.declare_parameter('angle_tolerance_deg', 1.0)
-        self.declare_parameter('angle_kp', 0.01)
-        self.declare_parameter('max_angular_speed', 0.10)
+        # VELOCITÀ MASSIME MOLTO MOLTO DOLCI (in m/s e rad/s)
+        self.declare_parameter('max_vx', 0.04)        # Max 4 cm/s in retromarcia
+        self.declare_parameter('max_vy', 0.02)        # Max 2 cm/s di traslazione
+        self.declare_parameter('max_wz', 0.03)        # Max 0.03 rad/s di rotazione
+
+        # RAMPA DI ACCELERAZIONE MASSIMA (m/s² e rad/s²)
+        self.declare_parameter('max_accel_x', 0.03)   # Incremento max di velocità x al secondo
+        self.declare_parameter('max_accel_y', 0.02)   # Incremento max di velocità y al secondo
+        self.declare_parameter('max_accel_z', 0.03)   # Incremento max di velocità z al secondo
+
+        # GUADAGNI PROPORZIONALI AMMORBITI
+        self.declare_parameter('kp_x', 0.00008)
+        self.declare_parameter('kp_y', 0.0004)
+        self.declare_parameter('kp_yaw', 0.0012)
+
+        # TOLLERANZE / ZONA MORTA (Evita scatti per micro-oscillazioni)
+        self.declare_parameter('deadband_y_mm', 5.0)
+        self.declare_parameter('deadband_yaw_deg', 1.0)
+
+        # Segni dei guadagni (invertire se corregge al contrario)
+        self.declare_parameter('y_sign', -1.0)
         self.declare_parameter('angle_sign', 1.0)
 
-        # Guadagno proporzionale per correggere y:
-        # velocita_y = lateral_sign * lateral_kp * y_pos.
-        self.declare_parameter('lateral_kp', 0.002)
-        self.declare_parameter('lateral_sign', -1.0)
-
-        # Sicurezza: se il sensore non aggiorna il dato entro questo tempo,
-        # il robot viene fermato perche' la posizione non e' piu' affidabile.
+        # Timeout e frequenza di controllo
         self.declare_parameter('scan_timeout', 0.30)
         self.declare_parameter('control_rate', 20.0)
 
+        # Distanza in metri dal centro di rotazione dell'AGV al sensore PGV sul pavimento
+        self.declare_parameter('sensor_offset_x', 0.43720)
+        self.sensor_offset_x = float(self.get_parameter('sensor_offset_x').value)
+
+        # Tolleranza ai micro-drop del sensore (es. tollera fino a 5 frame persi di fila ~ 0.25s)
+        self.consecutive_missed_scans = 0
+        self.max_allowed_missed_scans = 5
+
+        # Lettura parametri
         pgv_topic = self.get_parameter('pgv_topic').value
         cmd_vel_topic = self.get_parameter('cmd_vel_topic').value
         cancel_service = self.get_parameter('cancel_service').value
         dock_command_topic = self.get_parameter('dock_command_topic').value
+
         self.x_start_mm = float(self.get_parameter('x_start_mm').value)
         self.x_stop_mm = float(self.get_parameter('x_stop_mm').value)
         self.reverse_docking = bool(self.get_parameter('reverse_docking').value)
-        self.y_tolerance_mm = float(self.get_parameter('y_tolerance_mm').value)
-        self.max_forward_speed = float(self.get_parameter('max_forward_speed').value)
-        self.max_lateral_speed = float(self.get_parameter('max_lateral_speed').value)
-        self.angle_tolerance_deg = float(
-            self.get_parameter('angle_tolerance_deg').value
-        )
-        self.angle_kp = float(self.get_parameter('angle_kp').value)
-        self.max_angular_speed = float(
-            self.get_parameter('max_angular_speed').value
-        )
+
+        self.max_vx = float(self.get_parameter('max_vx').value)
+        self.max_vy = float(self.get_parameter('max_vy').value)
+        self.max_wz = float(self.get_parameter('max_wz').value)
+
+        self.max_accel_x = float(self.get_parameter('max_accel_x').value)
+        self.max_accel_y = float(self.get_parameter('max_accel_y').value)
+        self.max_accel_z = float(self.get_parameter('max_accel_z').value)
+
+        self.kp_x = float(self.get_parameter('kp_x').value)
+        self.kp_y = float(self.get_parameter('kp_y').value)
+        self.kp_yaw = float(self.get_parameter('kp_yaw').value)
+
+        self.deadband_y_mm = float(self.get_parameter('deadband_y_mm').value)
+        self.deadband_yaw_deg = float(self.get_parameter('deadband_yaw_deg').value)
+
+        self.y_sign = float(self.get_parameter('y_sign').value)
         self.angle_sign = float(self.get_parameter('angle_sign').value)
-        self.lateral_kp = float(self.get_parameter('lateral_kp').value)
-        self.lateral_sign = float(self.get_parameter('lateral_sign').value)
         self.scan_timeout = float(self.get_parameter('scan_timeout').value)
+        self.dt = 1.0 / float(self.get_parameter('control_rate').value)
 
-        # Evita una configurazione senza intervallo di avanzamento valido.
-        # if self.x_stop_mm <= self.x_start_mm:
-        #     raise ValueError('x_stop_mm must be greater than x_start_mm')
-
-        if self.x_start_mm <= self.x_stop_mm:
-            raise ValueError('x_stop_mm must be SMALLER than x_start_mm')
-
-        # Il docking deve essere esplicitamente abilitato dallo scheduler.
-        # Cosi' il semplice passaggio sopra un tag non avvia il robot.
+        # Stato interno e velocità correnti per la rampa
         self.dock_enabled = False
         self.state = DockState.IDLE
         self.latest_scan = None
         self.latest_scan_time = None
         self.cancel_requested = False
 
-        # Publisher dei comandi e dello stato diagnostico del docking.
+        self.curr_vx = 0.0
+        self.curr_vy = 0.0
+        self.curr_wz = 0.0
+
+        # Publisher e Subscriber
         self.cmd_pub = self.create_publisher(Twist, cmd_vel_topic, 10)
         self.status_pub = self.create_publisher(String, '/pgv_floor_dock/status', 10)
 
-        # Il comando arriva dallo scheduler/MQTT come flag Bool:
-        # true = nuova missione di docking, false = stop/disabilitazione.
         self.dock_command_sub = self.create_subscription(
             Bool, dock_command_topic, self.dock_command_callback, 10
         )
-
-        # Ogni messaggio PGV aggiorna l'ultima posizione conosciuta del tag.
         self.scan_sub = self.create_subscription(
             PgvScanData, pgv_topic, self.scan_callback, 10
         )
 
-        # Client del servizio che cancella gli obiettivi Nav2 attivi.
         self.cancel_client = self.create_client(CancelGoal, cancel_service)
 
-        # Il controllo gira periodicamente e pubblica il comando corretto
-        # in base allo stato corrente e all'ultimo messaggio PGV ricevuto.
-        self.timer = self.create_timer(
-            1.0 / float(self.get_parameter('control_rate').value),
-            self.control_loop,
-        )
+        self.timer = self.create_timer(self.dt, self.control_loop)
 
         self.get_logger().info(
-            f'PGV floor docking active for x={self.x_start_mm:.0f}..'
-            f'{self.x_stop_mm:.0f} mm on {pgv_topic}'
+            f'PGV Docking dolce avviato: x={self.x_start_mm:.0f} -> {self.x_stop_mm:.0f} mm (Max v={self.max_vx} m/s)'
         )
 
     def scan_callback(self, msg: PgvScanData):
-        # Salva sempre l'ultimo dato e l'istante in cui e' stato ricevuto.
-        # Il control_loop usera' questi valori per verificare che il dato sia
-        # recente prima di muovere il robot.
         self.latest_scan = msg
         self.latest_scan_time = self.get_clock().now()
 
-        # Una volta iniziato il docking, il callback si limita ad aggiornare
-        # la misura: la macchina a stati viene gestita dal control_loop.
+        # Se il dato e valido, resetta il contatore dei drop
+        if self.is_valid_tag(msg):
+            self.consecutive_missed_scans = 0
+
         if not self.dock_enabled or self.state != DockState.IDLE:
             return
 
-        # Un tag e' valido solo se rilevato, nell'intervallo x richiesto e
-        # senza il bit di errore segnalato dal sensore PGV.
-        if not self.is_start_tag(msg):
-            return
-
-        # Primo passaggio: ferma Nav2 e corregge contemporaneamente heading e y.
-        self.state = DockState.ALIGN
-        self.cancel_requested = False
-        self.publish_status('TAG_DETECTED_CANCELING_NAV')
-        self.request_nav_cancel()
-        self.get_logger().info(
-            f'PGV tag detected at x={msg.x_pos:.1f} mm, y={msg.y_pos:.1f} mm; '
-            'alignment to 0/180 deg and y=0'
-        )
+        if self.is_valid_tag(msg):
+            self.state = DockState.DOCKING
+            self.cancel_requested = False
+            self.publish_status('DOCKING_ACTIVE')
+            self.request_nav_cancel()
+            self.get_logger().info(
+                f'Tag PGV agganciato a x={msg.x_pos:.1f} mm, y={msg.y_pos:.1f} mm, angle={msg.angle:.1f} deg'
+            )
 
     def dock_command_callback(self, msg: Bool):
-        """Abilita o disabilita il docking tramite il flag dello scheduler."""
         if not msg.data:
-            # false/0: stop immediato e nessuna reazione ai tag PGV.
             self.dock_enabled = False
             self.stop_robot()
             self.state = DockState.IDLE
             self.latest_scan = None
             self.latest_scan_time = None
-            self.cancel_requested = False
             self.publish_status('DISABLED')
             return
 
         if self.dock_enabled and self.state != DockState.DOCKED:
             return
 
-        # true/1: abilita una nuova missione. Il reset dei dati precedenti
-        # impedisce che una vecchia scansione faccia partire il docking.
         self.dock_enabled = True
         self.state = DockState.IDLE
         self.latest_scan = None
         self.latest_scan_time = None
-        self.cancel_requested = False
+        self.curr_vx = 0.0
+        self.curr_vy = 0.0
+        self.curr_wz = 0.0
         self.publish_status('ARMED')
-        self.get_logger().info('PGV docking armed; waiting for a new tag')
+        self.get_logger().info('PGV docking armato; in attesa di un tag')
 
-    def is_start_tag(self, msg: PgvScanData):
-        # Questa condizione viene usata solo per avviare un nuovo docking:
-        # la posizione deve essere valida (no_pos == 0) e nell'intervallo iniziale x=200..800 mm.
+    def is_valid_tag(self, msg: PgvScanData):
         return (
             msg.no_pos == 0
-            # and self.x_start_mm <= msg.x_pos <= self.x_stop_mm
             and self.x_stop_mm <= msg.x_pos <= self.x_start_mm
             and msg.error is False
         )
 
-    def is_valid_tag(self, msg: PgvScanData):
-        # Anche durante il docking x non deve mai superare x_stop: oltre questo
-        # limite il robot sarebbe gia' oltre la posizione massima consentita.
-        # Il control_loop ferma il robot prima di poter pubblicare altri comandi.
-        return (
-            msg.no_pos == 0
-            # and msg.x_pos >= self.x_start_mm
-            # and msg.x_pos <= self.x_stop_mm
-            and msg.x_pos >= self.x_stop_mm
-            and msg.x_pos <= self.x_start_mm
-            and msg.error is False
-        )
-
-    def request_nav_cancel(self):
-        # Evita di inviare piu' richieste per lo stesso evento di rilevamento.
-        if self.cancel_requested:
-            return
-        self.cancel_requested = True
-
-        # Se Nav2 non e' ancora pronto, il docking continua comunque.
-        # Il comando successivo su /cmd_vel_raw verra' comunque prodotto da
-        # questo nodo e il collision monitor gestira' l'uscita verso i motori.
-        if not self.cancel_client.service_is_ready():
-            self.get_logger().warn(
-                'Nav2 cancel service is not ready; continuing PGV docking'
-            )
-            return
-
-        request = CancelGoal.Request()
-        # Una richiesta vuota (goal_info tutto a zero) chiede a Nav2 di
-        # cancellare tutti gli obiettivi attivi, non uno specifico goal.
-        self.cancel_client.call_async(request).add_done_callback(
-            self.cancel_done_callback
-        )
-
-    def cancel_done_callback(self, future):
-        # Callback eseguito quando Nav2 risponde alla richiesta di cancellazione.
-        try:
-            response = future.result()
-            self.get_logger().info(
-                f'Nav2 cancel response: return_code={response.return_code}'
-            )
-        except Exception as exc:
-            self.get_logger().error(f'Nav2 cancel request failed: {exc}')
-
-    def control_loop(self):
-        # In IDLE non viene pubblicato alcun comando di movimento.
-        if not self.dock_enabled or self.state in (DockState.IDLE, DockState.DOCKED):
-            return
-
-        # Se manca una misura, per sicurezza il robot resta fermo.
-        if self.latest_scan is None or self.latest_scan_time is None:
-            self.stop_robot()
-            return
-
-        age = (
-            self.get_clock().now() - self.latest_scan_time
-        ).nanoseconds / 1e9
-        # Una misura vecchia o non piu' valida interrompe il docking.
-        if age > self.scan_timeout or not self.is_valid_tag(self.latest_scan):
-            self.stop_robot()
-            self.publish_status('FAILED_TAG_LOST')
-            self.get_logger().warn('PGV tag lost or scan invalid; docking stopped')
-            # Dopo una perdita del tag o un superamento di x_stop il nodo si
-            # disarma: un nuovo comando true deve autorizzare un altro tentativo.
-            self.dock_enabled = False
-            self.state = DockState.IDLE
-            return
-
-        scan = self.latest_scan
-        if self.state == DockState.ALIGN:
-            # Mantiene il tag sotto osservazione correggendo heading e y insieme.
-            if (
-                abs(scan.y_pos) <= self.y_tolerance_mm
-                and self.is_heading_aligned(scan.angle)
-            ):
-                self.state = DockState.APPROACH
-                self.publish_status('APPROACHING')
-                self.get_logger().info('PGV heading and lateral alignment complete')
-            else:
-                self.publish_alignment(scan.angle, scan.y_pos)
-                return
-
-        if self.state == DockState.APPROACH:
-            # Quando x raggiunge 800 mm il docking e' completato.
-            # if scan.x_pos >= self.x_stop_mm:
-            if scan.x_pos <= self.x_stop_mm:
-                self.stop_robot()
-                self.publish_status('SUCCESS')
-                self.get_logger().info(
-                    f'PGV docking complete at x={scan.x_pos:.1f} mm'
-                )
-                # Disabilita automaticamente il nodo: il tag puo' rimanere
-                # sotto il sensore senza riavviare il docking.
-                self.dock_enabled = False
-                self.state = DockState.DOCKED
-                return
-
-            self.publish_approach(scan.x_pos)
-
     def angle_error(self, angle_deg):
-        # PGV increases clockwise. Select the nearer of the two valid headings.
         angle_to_zero = (0.0 - angle_deg + 180.0) % 360.0 - 180.0
         angle_to_180 = (180.0 - angle_deg + 180.0) % 360.0 - 180.0
         return angle_to_zero if abs(angle_to_zero) <= abs(angle_to_180) else angle_to_180
 
-    def is_heading_aligned(self, angle_deg):
-        return abs(self.angle_error(angle_deg)) <= self.angle_tolerance_deg
+    # def control_loop(self):
+    #     if not self.dock_enabled or self.state in (DockState.IDLE, DockState.DOCKED):
+    #         return
 
-    def publish_alignment(self, angle_deg, y_pos_mm):
+    #     if self.latest_scan is None or self.latest_scan_time is None:
+    #         self.stop_robot()
+    #         return
+
+    #     age = (self.get_clock().now() - self.latest_scan_time).nanoseconds / 1e9
+    #     if age > self.scan_timeout or not self.is_valid_tag(self.latest_scan):
+    #         self.stop_robot()
+    #         self.publish_status('FAILED_TAG_LOST')
+    #         self.get_logger().warn('Tag PGV perso o non valido; docking interrotto')
+    #         self.dock_enabled = False
+    #         self.state = DockState.IDLE
+    #         return
+
+    #     scan = self.latest_scan
+
+    #     # Condizione di arrivo
+    #     if scan.x_pos <= self.x_stop_mm:
+    #         self.stop_robot()
+    #         self.publish_status('SUCCESS')
+    #         self.get_logger().info(f'Docking completato a x={scan.x_pos:.1f} mm')
+    #         self.dock_enabled = False
+    #         self.state = DockState.DOCKED
+    #         return
+
+    #     # Calcola le velocità desiderate in modo graduale
+    #     self.compute_and_publish_cmd(scan.x_pos, scan.y_pos, scan.angle)
+
+    def control_loop(self):
+        if not self.dock_enabled or self.state in (DockState.IDLE, DockState.DOCKED):
+            return
+
+        # Verifichiamo l'eta del dato o la validita
+        is_stale = False
+        if self.latest_scan_time is not None:
+            age = (self.get_clock().now() - self.latest_scan_time).nanoseconds / 1e9
+            if age > self.scan_timeout:
+                is_stale = True
+
+        if self.latest_scan is None or is_stale or not self.is_valid_tag(self.latest_scan):
+            self.consecutive_missed_scans += 1
+            # Se ha perso solo 1 o 2 frame, MANTIENE L'ULTIMO COMANDO o rallenta invece di disarmarsi subito!
+            if self.consecutive_missed_scans <= self.max_allowed_missed_scans:
+                self.get_logger().warn(f'Micro-drop PGV rilevato ({self.consecutive_missed_scans}/{self.max_allowed_missed_scans}), proseguo...')
+                return
+            else:
+                # Solo se il tag e veramente perso per piu di 5 cicli consecutivi ferma tutto
+                self.stop_robot()
+                self.publish_status('FAILED_TAG_LOST')
+                self.get_logger().warn('Tag PGV perso definitivamente; docking interrotto')
+                self.dock_enabled = False
+                self.state = DockState.IDLE
+                return
+
+        scan = self.latest_scan
+
+        # Condizione di arrivo a destinazione
+        if scan.x_pos <= self.x_stop_mm:
+            self.stop_robot()
+            self.publish_status('SUCCESS')
+            self.get_logger().info(f'Docking completato con successo a x={scan.x_pos:.1f} mm')
+            self.dock_enabled = False
+            self.state = DockState.DOCKED
+            return
+
+        # Esegue il comando di retromarcia e centraggio
+        self.compute_and_publish_cmd(scan.x_pos, scan.y_pos, scan.angle)
+
+    def apply_slew_rate(self, target, current, max_accel):
+        """Limita la variazione istantanea di velocità per evitare scatti."""
+        max_delta = max_accel * self.dt
+        delta = target - current
+        if abs(delta) > max_delta:
+            delta = max_delta if delta > 0 else -max_delta
+        return current + delta
+    
+    def compute_and_publish_cmd(self, x_pos_mm, y_pos_mm, angle_deg):
+        # 1. RETROMARCIA X (Indietreggia in modo continuo)
+        err_x = x_pos_mm - self.x_stop_mm
+        target_vx_mag = self.kp_x * err_x
+        # Velocità minima garantita di 2.0 cm/s
+        target_vx_mag = max(0.02, min(self.max_vx, target_vx_mag))
+        target_vx = -target_vx_mag if self.reverse_docking else target_vx_mag
+
+        # 2. TRASLAZIONE LATERALE Y (Segno invertito per centrare y_pos)
+        # Forza y_sign a -1.0 se spinge dalla parte sbagliata
+        effective_y_sign = -1.0  # Invertito rispetto a prima!
+
+        if abs(y_pos_mm) <= 1.0:
+            target_vy = 0.0
+        else:
+            # Controllo proporzionale diretto per riportare y_pos verso 0
+            target_vy = effective_y_sign * self.kp_y * y_pos_mm
+            target_vy = max(-self.max_vy, min(self.max_vy, target_vy))
+
+        # 3. ROTAZIONE Z BLOCCATA A ZERO
+        # L'angolo a 17.8 deg e perfetto: NON applicare alcuna rotazione!
+        target_wz = 0.0
+
+        # 4. RAMPA DI ACCELERAZIONE
+        self.curr_vx = self.apply_slew_rate(target_vx, self.curr_vx, self.max_accel_x)
+        self.curr_vy = self.apply_slew_rate(target_vy, self.curr_vy, self.max_accel_y)
+        self.curr_wz = 0.0
+
+        # Pubblicazione comandi al robot
         twist = Twist()
-        angular_speed = self.angle_sign * self.angle_kp * self.angle_error(angle_deg)
-        twist.angular.z = max(
-            -self.max_angular_speed,
-            min(self.max_angular_speed, angular_speed),
-        )
-        lateral_speed = self.lateral_sign * self.lateral_kp * y_pos_mm
-        twist.linear.y = max(
-            -self.max_lateral_speed,
-            min(self.max_lateral_speed, lateral_speed),
-        )
+        twist.linear.x = self.curr_vx
+        twist.linear.y = self.curr_vy
+        twist.angular.z = 0.0
+
         self.cmd_pub.publish(twist)
 
-    def publish_approach(self, x_pos_mm):
-        # Calcola quanto e' avanzato il robot nell'intervallo x.
-        # progress=0 a x_start e progress=1 a x_stop.
-        # progress = (x_pos_mm - self.x_start_mm) / (
-        #     self.x_stop_mm - self.x_start_mm
-        # )
-        progress = (self.x_start_mm - x_pos_mm) / (
-            self.x_start_mm - self.x_stop_mm
-        )
-
-        # La velocita' diminuisce linearmente con l'aumentare di x:
-        # velocita' massima all'inizio e quasi zero vicino al punto finale.
-        forward_speed = self.max_forward_speed * (1.0 - progress)
-        speed = max(0.0, min(self.max_forward_speed, forward_speed))
-        twist = Twist()
-        # Se reverse_docking e' True, il robot indietreggia in retromarcia (linear.x negativo)
-        twist.linear.x = -speed if self.reverse_docking else speed
-        self.cmd_pub.publish(twist)
+    def request_nav_cancel(self):
+        if self.cancel_requested:
+            return
+        self.cancel_requested = True
+        if not self.cancel_client.service_is_ready():
+            return
+        request = CancelGoal.Request()
+        self.cancel_client.call_async(request)
 
     def stop_robot(self):
-        # Twist vuoto = tutte le velocita' lineari e angolari a zero.
+        self.curr_vx = 0.0
+        self.curr_vy = 0.0
+        self.curr_wz = 0.0
         self.cmd_pub.publish(Twist())
 
     def publish_status(self, status):
-        # Pubblica lo stato per log, supervisori o strumenti di diagnostica.
         msg = String()
         msg.data = status
         self.status_pub.publish(msg)
 
     def destroy_node(self):
-        # Arresto di sicurezza anche durante lo spegnimento del nodo.
         self.stop_robot()
         super().destroy_node()
 
 
 def main(args=None):
-    # Inizializza ROS 2, crea il nodo e lascia l'esecutore gestire callback
-    # del sensore, timer e risposta del servizio Nav2.
     rclpy.init(args=args)
     node = PgvFloorDockNode()
     try:
@@ -365,5 +336,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
-# ros2 topic pub --once /agv_dock std_msgs/msg/Bool "{data: true}"

@@ -7,6 +7,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.duration import Duration
 
 class LidarWatchdogNode(Node):
     def __init__(self):
@@ -16,9 +17,16 @@ class LidarWatchdogNode(Node):
         self.declare_parameter('timeout_sec', 3.0)
         self.timeout_sec = self.get_parameter('timeout_sec').value
 
-        # Timestamps ultimo messaggio ricevuto
-        self.last_front_time = self.get_clock().now()
-        self.last_rear_time = self.get_clock().now()
+        self.declare_parameter('grace_period', 15.0)
+        grace = Duration(seconds=self.get_parameter('grace_period').value)
+
+        now = self.get_clock().now()
+        self.last_front_time = now + grace
+        self.last_rear_time = now + grace
+
+        # # Timestamps ultimo messaggio ricevuto
+        # self.last_front_time = self.get_clock().now()
+        # self.last_rear_time = self.get_clock().now()
 
         # Subscription con QoS SensorData (Best Effort, adatto ai LiDAR)
         self.sub_front = self.create_subscription(
@@ -61,7 +69,9 @@ class LidarWatchdogNode(Node):
             self.get_logger().error(f"LiDAR Frontale KO! Nessun dato da {dt_front:.1f}s.")
             self.kill_node_by_namespace('lidar_front')
             # Reset del timer per evitare chiamate a raffica sullo stesso processo
-            self.last_front_time = now
+            # self.last_front_time = now
+            grace = Duration(seconds=self.get_parameter('grace_period').value)
+            self.last_front_time = now + grace
 
         # Check Rear Lidar
         dt_rear = (now - self.last_rear_time).nanoseconds / 1e9
@@ -69,7 +79,9 @@ class LidarWatchdogNode(Node):
             self.get_logger().error(f"LiDAR Posteriore KO! Nessun dato da {dt_rear:.1f}s.")
             self.kill_node_by_namespace('lidar_rear')
             # Reset del timer per evitare chiamate a raffica sullo stesso processo
-            self.last_rear_time = now
+            # self.last_rear_time = now
+            grace = Duration(seconds=self.get_parameter('grace_period').value)
+            self.last_rear_time = now + grace
 
 
 def main(args=None):

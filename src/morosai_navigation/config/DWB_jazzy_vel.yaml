@@ -47,11 +47,11 @@
 
 amcl:
   ros__parameters:
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
+    alpha1: 0.05  # Rotazione causata dalla rotazione
+    alpha2: 0.05  # Rotazione causata dalla traslazione
+    alpha3: 0.1   # Traslazione causata dalla traslazione
+    alpha4: 0.05  # Traslazione causata dalla rotazione
+    alpha5: 0.1   # Rumore specifico per il movimento laterale (omni)
     base_frame_id: "base_footprint"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
@@ -60,7 +60,7 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 25.0
+    laser_max_range: 10.0
     laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
@@ -69,16 +69,16 @@ amcl:
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
-    recovery_alpha_fast: 0.0
-    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
     resample_interval: 1
     robot_model_type: "nav2_amcl::DifferentialMotionModel"
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
-    transform_tolerance: 0.8
-    update_min_a: 0.1
-    update_min_d: 0.1
+    transform_tolerance: 0.3
+    update_min_d: 0.35  # Aggiorna la stima dopo 25 cm di movimento
+    update_min_a: 0.3   # Oppure dopo circa 11 gradi di rotazione
     z_hit: 0.5
     z_max: 0.05
     z_rand: 0.5
@@ -89,15 +89,15 @@ amcl:
     always_reset_initial_pose: false
     first_map_only: false
     initial_pose:
-      x: 0.0
-      y: 0.0
+      x: 0.48
+      y: -0.616
       z: 0.0
       yaw: 0.0
 
 map_server:
   ros__parameters:
     use_sim_time: False
-    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/map_fema_28_09_26.yaml"
+    yaml_filename: "/home/morosai/morosai_ws/src/morosai_navigation/maps/femap_8_10.yaml"
 
 map_saver:
   ros__parameters:
@@ -179,8 +179,8 @@ controller_server:
     min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
-    progress_checker_plugin: "progress_checker"
-    goal_checker_plugins: ["general_goal_checker"]
+    progress_checker_plugin: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
 
@@ -188,11 +188,11 @@ controller_server:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
       movement_time_allowance: 15.0
-    general_goal_checker:
+    goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.20
+      yaw_goal_tolerance: 0.20
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
@@ -221,8 +221,8 @@ controller_server:
       linear_granularity: 0.03
       angular_granularity: 0.02
       transform_tolerance: 0.5
-      xy_goal_tolerance: 0.10
-      yaw_goal_tolerance: 0.10
+      xy_goal_tolerance: 0.20
+      yaw_goal_tolerance: 0.20
       trans_stopped_velocity: 0.01
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -297,50 +297,116 @@ local_costmap:
           raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
+      # stvl_layer:
+      #   plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+      #   enabled:                  true
+      #   voxel_decay:              1.0
+      #   decay_model:              0
+      #   voxel_size:               0.05
+      #   track_unknown_space:      true
+      #   mark_threshold:           8
+      #   update_footprint_enabled: true
+      #   combination_method:       1
+      #   origin_z:                 0.0
+      #   publish_voxel_map:        true
+      #   transform_tolerance:      0.5
+      #   mapping_mode:             false
+      #   map_save_duration:        60.0
+      #   observation_sources: gordon_tof virtual_corridor
+      #   footprint_clearing_enabled: true
+      #   gordon_tof:
+      #     topic: "/gordon_tof/pointcloud_filtered"
+      #     data_type: "PointCloud2"
+      #     max_obstacle_height: 2.0
+      #     clearing: True
+      #     marking: True
+      #   virtual_corridor:
+      #     topic: "/virtual_corridor_cloud"
+      #     data_type: "PointCloud2"
+      #     max_obstacle_height: 0.5
+      #     marking: True
+      #     clearing: True
       stvl_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
-        enabled:                  true
-        voxel_decay:              1.0
-        decay_model:              0
-        voxel_size:               0.05
-        track_unknown_space:      true
-        mark_threshold:           8
+        enabled: true
+        voxel_decay: 0.2
+        decay_model: 0
+        voxel_size: 0.05
+        mapping_mode: false
+        track_unknown_space: true
+        unknown_threshold: 15
+        mark_threshold: 0
         update_footprint_enabled: true
-        combination_method:       1
-        origin_z:                 0.0
-        publish_voxel_map:        true
-        transform_tolerance:      0.5
-        mapping_mode:             false
-        map_save_duration:        60.0
-        observation_sources: gordon_tof virtual_corridor
+        combination_method: 1
+        origin_z: 0.0
+        publish_voxel_map: true
+        transform_tolerance: 0.5
+        mapping_mode: false
+        map_save_duration: 10.0
+        observation_sources: gordon_tof
         footprint_clearing_enabled: true
         gordon_tof:
-          topic: "/gordon_tof/pointcloud_filtered"
-          data_type: "PointCloud2"
+          topic: /gordon_tof/pointcloud_filtered
+          data_type: PointCloud2
           max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-        virtual_corridor:
-          topic: "/virtual_corridor_cloud"
-          data_type: "PointCloud2"
-          max_obstacle_height: 0.5
-          marking: True
-          clearing: True
-      always_send_full_costmap: True
+          min_obstacle_height: 0.05
+          obstacle_max_range: 2.5     # Raggio massimo entro cui inserire voxel
+          obstacle_min_range: 0.1     # Raggio minimo
+          clearing: true
+          marking: true
+      always_send_full_costmap: true
+
+# global_costmap:
+#   global_costmap:
+#     ros__parameters:
+#       update_frequency: 0.6
+#       publish_frequency: 1.0
+#       footprint_padding: 0.05
+#       global_frame: map
+#       robot_base_frame: base_footprint
+#       use_sim_time: False
+#       footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
+#       resolution: 0.05
+#       track_unknown_space: false
+#       plugins: ["obstacle_layer", "inflation_layer"]
+#       obstacle_layer:
+#         plugin: "nav2_costmap_2d::ObstacleLayer"
+#         enabled: True
+#         observation_sources: scan
+#         footprint_clearing_enabled: true
+#         scan:
+#           topic: /merged_filtered
+#           max_obstacle_height: 2.0
+#           clearing: True
+#           marking: True
+#           data_type: "LaserScan"
+#           raytrace_max_range: 3.0
+#           raytrace_min_range: 0.0
+#           obstacle_max_range: 2.5
+#           obstacle_min_range: 0.0
+#       inflation_layer:
+#         plugin: "nav2_costmap_2d::InflationLayer"
+#         cost_scaling_factor: 2.0
+#         inflation_radius: 1.1
+#       always_send_full_costmap: True
 
 global_costmap:
   global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
-      footprint_padding: 0.05
+      transform_tolerance: 0.1
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: False
-      footprint: "[[0.59, 0.685], [0.59, -0.685], [-0.59, -0.685], [-0.59, 0.685]]"
       resolution: 0.05
       track_unknown_space: false
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+        enabled: true
+        subscribe_to_updates: true
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -356,13 +422,12 @@ global_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
           obstacle_min_range: 0.0
-      static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: true
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
         cost_scaling_factor: 2.0
         inflation_radius: 1.1
+        inflate_unknown: false
       always_send_full_costmap: True
 
 velocity_smoother:

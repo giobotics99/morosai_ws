@@ -31,13 +31,13 @@ def generate_launch_description():
     # ============================================================
     declare_map_arg = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(pkg_morosai_navigation, 'maps', 'map_fema_28_09_26.yaml'),
+        default_value=os.path.join(pkg_morosai_navigation, 'maps', 'femap_8_10.yaml'),
         description='Full path to map yaml file'
     )
 
     declare_nav_params_arg = DeclareLaunchArgument(
         'nav_params_file',
-        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy_ekf.yaml'),
+        default_value=os.path.join(pkg_morosai_navigation, 'config','DWB_jazzy_vel.yaml'),
         description='Full path to NAV2 params file'
     )
 
@@ -248,7 +248,7 @@ def generate_launch_description():
 
         sensors_launch,
         laser_filter_node,
-        ekf_filter_node,
+        # ekf_filter_node,
 
         # NAV2 EXPLICIT
         nav2_lifecycle_manager,
@@ -262,8 +262,8 @@ def generate_launch_description():
         velocity_smoother,
 
         # SAFETY
-        collision_monitor_node,
-        lifecycle_manager_safety,
+        # collision_monitor_node,
+        # lifecycle_manager_safety,
 
         # EXTRAS
         nav_topic_publisher_node,
