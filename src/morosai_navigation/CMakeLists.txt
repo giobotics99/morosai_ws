@@ -53,6 +53,7 @@ install(
     scripts/bag_analysis_node.py
     scripts/extract_metrics.py
     scripts/map_updater_node.py
+    scripts/jetson_shutdown_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

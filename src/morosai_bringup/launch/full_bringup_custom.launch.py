@@ -239,6 +239,16 @@ def generate_launch_description():
         output='screen',
         respawn=True,
         condition=IfCondition(use_rviz)
+    ),
+
+    jetson_shutdown_node = Node(
+        package='morosai_navigation',  # Nome del tuo pacchetto ROS 2
+        executable='jetson_shutdown_node.py', # Nome dello script eseguibile
+        name='jetson_shutdown_node',   # Nome assegnato al nodo in esecuzione
+        output='screen',               # Per vedere i log direttamente nel terminale del launch
+        parameters=[{
+            'shutdown_topic': '/shutdown' # Eventuali parametri personalizzati
+        }]
     )
 
     # ============================================================
@@ -274,5 +284,6 @@ def generate_launch_description():
         nav_topic_publisher_node,
         apriltag_node,
         map_updater_node,
-        rviz_node
+        rviz_node,
+        jetson_shutdown_node
     ])
