@@ -120,7 +120,7 @@ def generate_launch_description():
         namespace='', parameters=[nav_params_file, {'yaml_filename': map_file}], output='screen'
     )
     amcl = LifecycleNode(package='nav2_amcl', executable='amcl', name='amcl', **nav2_node_config)
-    controller_server = LifecycleNode(package='nav2_controller', executable='controller_server', name='controller_server', **nav2_node_config)
+    controller_server = LifecycleNode(package='nav2_controller', executable='controller_server', name='controller_server', remappings=[('cmd_vel', 'cmd_vel_raw')], **nav2_node_config)
     planner_server = LifecycleNode(package='nav2_planner', executable='planner_server', name='planner_server', **nav2_node_config)
     behavior_server = LifecycleNode(package='nav2_behaviors', executable='behavior_server', name='behavior_server', **nav2_node_config)
     bt_navigator = LifecycleNode(package='nav2_bt_navigator', executable='bt_navigator', name='bt_navigator', **nav2_node_config)
@@ -131,7 +131,11 @@ def generate_launch_description():
     velocity_smoother = LifecycleNode(
         package='nav2_velocity_smoother', executable='velocity_smoother', name='velocity_smoother', 
         namespace='',
-        remappings=[('cmd_vel_smoothed', '/cmd_vel_raw')],
+        remappings=
+        [# Ascolta il comando (eventualmente tagliato a 0) dal collision_monitor
+            ('cmd_vel', 'cmd_vel_raw'),         
+            # Invia il comando ricalcolato e smussato ai driver fisici del robot
+            ('cmd_vel_smoothed', 'cmd_vel_nav')],
         output='screen',
         emulate_tty=True,
         parameters=[nav_params_file]
@@ -169,8 +173,8 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'autostart': autostart,
-            'node_names': ['collision_monitor'],
-            'bond_timeout': 10.0
+            'node_names': ['collision_monitor']
+            # 'bond_timeout': 10.0
         }]
     )
 
@@ -198,11 +202,12 @@ def generate_launch_description():
         parameters=[{
             'family': 'Standard52h13',
             'size': 0.088,
-            'detector.threads': 8, # Jetson A78AE ha 12 core, dedichiamone 8 ad apriltag!
+            'detector.threads': 1, # Jetson A78AE ha 12 core, dedichiamone 8 ad apriltag!
             'detector.decimate': 1.0, 
             'qos_profile': "sensor_data"
         }],
-        output='screen'
+        output='screen',
+        respawn=True
     )
 
     map_updater_node = Node(
@@ -262,8 +267,8 @@ def generate_launch_description():
         velocity_smoother,
 
         # SAFETY
-        # collision_monitor_node,
-        # lifecycle_manager_safety,
+        collision_monitor_node,
+        lifecycle_manager_safety,
 
         # EXTRAS
         nav_topic_publisher_node,

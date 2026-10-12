@@ -173,8 +173,8 @@ behavior_server:
 controller_server:
   ros__parameters:
     use_sim_time: false
-    controller_frequency: 20.0
-    costmap_update_timeout: 0.30
+    controller_frequency: 10.0
+    costmap_update_timeout: 0.20 # Reduced from 0.30
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
@@ -197,27 +197,27 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
       # Velocità lineari ridotte per robot omni da 290kg
-      min_vel_x: -0.4
-      max_vel_x: 0.4
-      min_vel_y: -0.4
-      max_vel_y: 0.4
+      min_vel_x: -0.35
+      max_vel_x: 0.35
+      min_vel_y: -0.35
+      max_vel_y: 0.35
       # Rotazione lenta e controllata per evitare slittamenti
       max_vel_theta: 0.25
       min_speed_xy: 0.01
       max_speed_xy: 0.35
       min_speed_theta: -0.2
       # Rampe di accelerazione molto dolci per 290kg
-      acc_lim_x: 0.12
-      acc_lim_y: 0.12
-      acc_lim_theta: 0.15
+      acc_lim_x: 0.1
+      acc_lim_y: 0.1
+      acc_lim_theta: 0.1
       # Decelerazione controllata per evitare sobbalzi o slittamenti dei rulli omni
-      decel_lim_x: -0.12
-      decel_lim_y: -0.12
-      decel_lim_theta: -0.15
-      vx_samples: 25
-      vy_samples: 25
-      vtheta_samples: 25
-      sim_time: 3.0 # Aumentato ulteriormente per prevedere meglio la traiettoria a basse velocità
+      decel_lim_x: -0.1
+      decel_lim_y: -0.1
+      decel_lim_theta: -0.1
+      vx_samples: 10
+      vy_samples: 10
+      vtheta_samples: 15
+      sim_time: 2.0 # Aumentato ulteriormente per prevedere meglio la traiettoria a basse velocità
       linear_granularity: 0.03
       angular_granularity: 0.02
       transform_tolerance: 0.5
@@ -248,7 +248,7 @@ bt_navigator:
     odom_topic: /odom
     bt_loop_duration: 15
     default_server_timeout: 20
-    wait_for_service_timeout: 1000
+    wait_for_service_timeout: 5000 #increased from 1000
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
@@ -262,8 +262,8 @@ bt_navigator:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 10.0
+      publish_frequency: 10.0
       global_frame: odom
       robot_base_frame: base_footprint
       use_sim_time: False
@@ -329,7 +329,7 @@ local_costmap:
       stvl_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true
-        voxel_decay: 0.2
+        voxel_decay: 0.7
         decay_model: 0
         voxel_size: 0.05
         mapping_mode: false
@@ -354,7 +354,7 @@ local_costmap:
           obstacle_min_range: 0.1     # Raggio minimo
           clearing: true
           marking: true
-      always_send_full_costmap: true
+      always_send_full_costmap: false
 
 # global_costmap:
 #   global_costmap:
@@ -428,24 +428,25 @@ global_costmap:
         cost_scaling_factor: 2.0
         inflation_radius: 1.1
         inflate_unknown: false
-      always_send_full_costmap: True
+      always_send_full_costmap: false
 
 velocity_smoother:
   ros__parameters:
     use_sim_time: False
-    smoothing_frequency: 20.0
+    smoothing_frequency: 10.0
     scale_velocities: False
-    feedback: "CLOSED_LOOP"
+    feedback: "OPEN_LOOP"
     # Allineato ai limiti ridotti del DWB
-    max_velocity: [0.4, 0.4, 0.25]
-    min_velocity: [-0.4, -0.4, -0.25]
+    max_velocity: [0.35, 0.35, 0.25]
+    min_velocity: [-0.35, -0.35, -0.25]
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 0.6
     # Rampe di accelerazione/decelerazione del velocity smoother coordinate
-    max_accel: [0.12, 0.12, 0.15]
-    max_decel: [-0.12, -0.12, -0.15]
-    odom_topic: "/odom"
+    max_accel: [0.1, 0.1, 0.1]
+    max_decel: [-0.1, -0.1, -0.1]
+    odom_topic: "odom"
     odom_duration: 0.1
+    stamp_smoothed_velocity_with_smoothing_time: false  # ONLY IN JAZZ
 
 waypoint_follower:
   ros__parameters:
@@ -461,40 +462,47 @@ waypoint_follower:
 
 collision_monitor:
   ros__parameters:
-    use_sim_time: False
-    enabled: True
     base_frame_id: "base_footprint"
     odom_frame_id: "odom"
-    cmd_vel_in_topic: "/cmd_vel_raw"
-    cmd_vel_out_topic: "/cmd_vel"
-    transform_tolerance: 0.9
-    source_timeout: 1.0
-    stop_pub_timeout: 5.0
-    enable_stamped_cmd_vel: False
+    cmd_vel_in_topic: "cmd_vel_nav"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 0.5
+    source_timeout: 5.0
+    base_shift_correction: True
+    stop_pub_timeout: 2.0
+    enable_stamped_cmd_vel: False # False for Jazzy or older by default
+    use_realtime_priority: false
+    frequency: 10.0
+    bond_heartbeat_period: 0.1
     
-    polygons: ["polygon_slow", "polygon_stop"]
+    polygons: ["PolygonSlow", "PolygonStop"]
     
     # 1. SLOWDOWN ZONE (più ampia per dare tempo a 290kg di rallentare)
-    polygon_slow:
+    PolygonSlow:
       type: "polygon"
-      points: "[[0.925, 0.7975], [0.925, -0.7975], [-0.925, -0.7975], [-0.925, 0.7975]]"
+      points: "[[0.75, 0.8], [0.75, -0.8], [-0.75, -0.8], [-0.75, 0.8]]"
       action_type: "slowdown"
-      scale_factor: 0.85 
-      min_points: 150     
+      min_points: 4    
       visualize: True
-      polygon_pub_topic: "polygon_slow"
+      polygon_pub_topic: "polygon_slowdown"
+      slowdown_ratio: 0.5
+      enabled: True
 
     # 2. EMERGENCY STOP ZONE (margine di sicurezza aumentato)
-    polygon_stop:
+    PolygonStop:
       type: "polygon"
-      points: "[[0.795, 0.6775], [0.795, -0.6775], [-0.795, -0.6775], [-0.795, 0.6775]]"
+      points: "[[0.677, 0.795], [0.677, -0.795], [-0.677, -0.795], [-0.677, 0.795]]"
       action_type: "stop"
-      min_points: 100     
+      min_points: 4     
       visualize: True
       polygon_pub_topic: "polygon_stop"
+      enabled: True
 
     observation_sources: ["scan"]
     
     scan:
       type: "scan"
+      # source_timeout: 2.0
       topic: "/merged_filtered"
+      enabled: True

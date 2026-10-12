@@ -26,7 +26,7 @@ class TagAlignNode(Node):
         self.declare_parameter('allowed_tags', ['tagStandard52h13:104', 'tagStandard52h13:103', 'tagStandard52h13:102'])
         self.declare_parameter('camera_frame', 'tof_optical_frame')
         self.declare_parameter('robot_frame', 'base_footprint')
-        self.declare_parameter('cmd_vel_topic', '/cmd_vel_raw')
+        self.declare_parameter('cmd_vel_topic', '/cmd_vel_nav')
         self.declare_parameter('target_distance', 0.5)
         self.declare_parameter('kp_x', 0.8)
         self.declare_parameter('kp_y', 0.8)
@@ -165,14 +165,42 @@ class TagAlignNode(Node):
             self.publish_result("SUCCESS")
             return
         
-        # Calcolo velocità e invio ai motori
+        # # Calcolo velocità e invio ai motori
+        # v_cam_x = self.kp_x * error_lat if abs(error_lat) > self.xy_tol else 0.0
+        # v_cam_z = self.kp_y * error_fwd if abs(error_fwd) > self.xy_tol else 0.0
+        # w_cam_y = self.kp_yaw * error_yaw if abs(error_yaw) > self.yaw_tol else 0.0
+        
+        # v_cam_x = max(-self.max_lin_vel, min(self.max_lin_vel, v_cam_x))
+        # v_cam_z = max(-self.max_lin_vel, min(self.max_lin_vel, v_cam_z))
+        # w_cam_y = max(-self.max_ang_vel, min(self.max_ang_vel, w_cam_y))
+
+
+        # Calcolo velocità lineari
         v_cam_x = self.kp_x * error_lat if abs(error_lat) > self.xy_tol else 0.0
         v_cam_z = self.kp_y * error_fwd if abs(error_fwd) > self.xy_tol else 0.0
+        
+        # --- STRATEGIA DI SCALING DINAMICO DELLA ROTAZIONE ---
+        # 'z' è la distanza attuale sull'asse ottico.
+        # Calcoliamo un fattore di attenuazione che diminuisce linearmente 
+        # man mano che z si avvicina a target_distance.
+        # Normalizziamo su un delta di 1.0 metri per avere una transizione fluida.
+        dist_factor = (z - self.target_distance) / 1.0 
+        
+        # Saturiamo il fattore tra 0.15 (15%) e 1.0 (100%).
+        # A grande distanza la rotazione è libera al 100%. 
+        # Vicino al target, la velocità angolare massima viene tagliata all'85% per forzare micro-rotazioni.
+        dist_factor = max(0.15, min(1.0, dist_factor))
+        
+        # Calcoliamo il nuovo limite dinamico
+        dynamic_max_ang = self.max_ang_vel * dist_factor
+        
+        # Calcolo velocità angolare proporzionale
         w_cam_y = self.kp_yaw * error_yaw if abs(error_yaw) > self.yaw_tol else 0.0
         
+        # Saturazione con i limiti classici per la traslazione e dinamico per la rotazione
         v_cam_x = max(-self.max_lin_vel, min(self.max_lin_vel, v_cam_x))
         v_cam_z = max(-self.max_lin_vel, min(self.max_lin_vel, v_cam_z))
-        w_cam_y = max(-self.max_ang_vel, min(self.max_ang_vel, w_cam_y))
+        w_cam_y = max(-dynamic_max_ang, min(dynamic_max_ang, w_cam_y))
         
         q_base_cam = [t_base_cam.transform.rotation.x, t_base_cam.transform.rotation.y, t_base_cam.transform.rotation.z, t_base_cam.transform.rotation.w]
         R_base_cam = quat_to_rot_matrix(q_base_cam)

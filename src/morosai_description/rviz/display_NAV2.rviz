@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /TF1/Tree1
         - /LaserScan1/Topic1
+        - /Polygon1/Topic1
         - /PointCloud22/Topic1
         - /PointCloud23/Topic1
         - /LaserScan2/Topic1
@@ -509,7 +510,7 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.375
+        Max Value: 0.7250000238418579
         Min Value: 0.07500000298023224
         Value: true
       Axis: Z
@@ -538,6 +539,19 @@ Visualization Manager:
         Value: /local_costmap/voxel_grid
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/Polygon
+      Color: 255; 0; 0
+      Enabled: true
+      Name: Polygon
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /polygon_slowdown
       Value: true
   Enabled: true
   Global Options:
@@ -585,25 +599,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 7.61370325088501
+      Distance: 7.666251182556152
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.7051074504852295
-        Y: -2.544250011444092
+        X: -0.37366175651550293
+        Y: -2.6965107917785645
         Z: -9.490395314060152e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.11479619145393372
+      Pitch: 0.9447957873344421
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 0.5124038457870483
+      Yaw: 3.2473983764648438
     Saved: ~
 Window Geometry:
   Displays:
