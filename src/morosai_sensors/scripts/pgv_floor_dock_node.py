@@ -16,10 +16,11 @@ class DockState(Enum):
     IDLE = 0
     DOCKING = 1
     DOCKED = 2
+    RECOVERY = 3
 
 
 class PgvFloorDockNode(Node):
-    """Nodo di docking olonomico reattivo con allineamento angolare e logica old-but-gold per PGV."""
+    """Nodo di docking olonomico reattivo con allineamento angolare e logica di recovery per inerzia PGV."""
 
     def __init__(self):
         super().__init__('pgv_floor_dock_node')
@@ -36,9 +37,9 @@ class PgvFloorDockNode(Node):
         self.declare_parameter('reverse_docking', True)
 
         # VELOCITÀ MASSIME (in m/s e rad/s)
-        self.declare_parameter('max_vx', 0.04)        # Max 4 cm/s in retromarcia
-        self.declare_parameter('max_vy', 0.02)        # Max 2 cm/s di traslazione
-        self.declare_parameter('max_wz', 0.03)        # Max 0.03 rad/s di rotazione
+        self.declare_parameter('max_vx', 0.05)        # Max 4 cm/s in retromarcia
+        self.declare_parameter('max_vy', 0.08)        # Max 2 cm/s di traslazione
+        self.declare_parameter('max_wz', 0.1)        # Max 0.03 rad/s di rotazione
 
         # RAMPA DI ACCELERAZIONE MASSIMA (m/s² e rad/s²)
         self.declare_parameter('max_accel_x', 0.03)
@@ -51,8 +52,8 @@ class PgvFloorDockNode(Node):
         self.declare_parameter('kp_yaw', 0.0012)
 
         # TOLLERANZE / ZONA MORTA
-        self.declare_parameter('deadband_y_mm', 1.0)       # Come nel tuo old-but-gold
-        self.declare_parameter('deadband_yaw_deg', 3.0)    # Delta di tolleranza attorno ai 180°
+        self.declare_parameter('deadband_y_mm', 1.0)
+        self.declare_parameter('deadband_yaw_deg', 3.0)
 
         # Segni dei guadagni
         self.declare_parameter('y_sign', 1.0)
@@ -66,9 +67,14 @@ class PgvFloorDockNode(Node):
         self.declare_parameter('sensor_offset_x', 0.43720)
         self.sensor_offset_x = float(self.get_parameter('sensor_offset_x').value)
 
-        # Gestione micro-drop
+        # Gestione micro-drop e RECOVERY
         self.consecutive_missed_scans = 0
         self.max_allowed_missed_scans = 5
+        self.declare_parameter('recovery_wz', 0.1)       # rad/s per cercare il tag
+        self.recovery_wz = float(self.get_parameter('recovery_wz').value)
+        self.declare_parameter('max_recovery_time', math.pi/self.recovery_wz)   # Giro completo
+        self.max_recovery_time = float(self.get_parameter('max_recovery_time').value)
+        self.recovery_start_time = None
 
         # TF2 Setup per conoscere la posizione del sensore rispetto a base_link
         self.tf_buffer = Buffer()
@@ -152,7 +158,7 @@ class PgvFloorDockNode(Node):
             pose_base = do_transform_pose(pose_sensor.pose, transform)
             return pose_base.position.y * 1000.0 # Restituisce in millimetri
         except Exception as e:
-            # Fallback sicuro se la TF fallisce momentaneamente: usa il dato grezzo del sensore
+            # Fallback sicuro se la TF fallisce momentaneamente
             return scan.y_pos
 
     def scan_callback(self, msg: PgvScanData):
@@ -181,6 +187,7 @@ class PgvFloorDockNode(Node):
             self.state = DockState.IDLE
             self.latest_scan = None
             self.latest_scan_time = None
+            self.recovery_start_time = None
             self.publish_status('DISABLED')
             return
 
@@ -191,6 +198,7 @@ class PgvFloorDockNode(Node):
         self.state = DockState.IDLE
         self.latest_scan = None
         self.latest_scan_time = None
+        self.recovery_start_time = None
         self.curr_vx = 0.0
         self.curr_vy = 0.0
         self.curr_wz = 0.0
@@ -220,17 +228,46 @@ class PgvFloorDockNode(Node):
 
         if self.latest_scan is None or is_stale or not self.is_valid_tag(self.latest_scan):
             self.consecutive_missed_scans += 1
-            if self.consecutive_missed_scans <= self.max_allowed_missed_scans:
-                return
-            else:
-                self.stop_robot()
-                self.publish_status('FAILED_TAG_LOST')
-                self.get_logger().warn('Tag PGV perso definitivamente; docking interrotto')
-                self.dock_enabled = False
-                self.state = DockState.IDLE
-                return
+            if self.consecutive_missed_scans > self.max_allowed_missed_scans:
+                
+                # Se perdiamo il tag mentre eravamo in DOCKING, passiamo a RECOVERY
+                if self.state == DockState.DOCKING:
+                    self.state = DockState.RECOVERY
+                    self.recovery_start_time = self.get_clock().now()
+                    self.publish_status('RECOVERY_SEARCHING_TAG')
+                    self.get_logger().warn('Tag superato per inerzia, avvio wandering di recupero...')
+                    return
+                
+                # Se siamo già in RECOVERY, eseguiamo il movimento lento
+                elif self.state == DockState.RECOVERY:
+                    elapsed = (self.get_clock().now() - self.recovery_start_time).nanoseconds / 1e9
+                    if elapsed > self.max_recovery_time:
+                        # Se scade il tempo e non troviamo nulla, dichiariamo fallimento
+                        self.stop_robot()
+                        self.publish_status('FAILED_TAG_LOST')
+                        self.get_logger().warn('Timeout recovery: Tag PGV perso definitivamente.')
+                        self.dock_enabled = False
+                        self.state = DockState.IDLE
+                    else:
+                        # Muoviti lentissimamente all'indietro per recuperare il tag.
+                        # Azzeriamo Y e Wz durante questa fase.
+                        twist = Twist()
+                        twist.linear.x = 0.0
+                        twist.linear.y = 0.0
+                        twist.angular.z = self.recovery_wz
+                        self.cmd_pub.publish(twist)
+                    return
+                else:
+                    return
+            return
 
         scan = self.latest_scan
+
+        # Se eravamo in recovery e ritroviamo il tag, riprendiamo il docking normale
+        if self.state == DockState.RECOVERY:
+            self.state = DockState.DOCKING
+            self.publish_status('DOCKING_ACTIVE')
+            self.get_logger().info('Tag recuperato con successo, riprendo il docking.')
 
         # Condizione di arrivo
         if scan.x_pos <= self.x_stop_mm:
@@ -254,56 +291,50 @@ class PgvFloorDockNode(Node):
         # Ricaviamo l'errore Y in millimetri tramite TF2
         y_pos_mm = self.get_tag_y_in_base(scan)
         
-        # Calcoliamo quanto manca all'angolo per arrivare a 180° (usando la via più breve)
+        # Calcoliamo quanto manca all'angolo per arrivare a 180°
         yaw_err = self.angle_error_to_180(scan.angle)
 
         target_vx = 0.0
         target_vy = 0.0
         target_wz = 0.0
 
-        # FASE 1: Se l'angolo NON è nel range dei 180° (fuori dal delta di tolleranza), 
-        # ruotiamo per metterci dritti SENZA PERDERE IL TAG (compensando in Y la rotazione della testa).
+        # FASE 1: Allineamento rotazionale se fuori tolleranza
         if abs(yaw_err) > self.deadband_yaw_deg:
             self.publish_status('ALIGNING_ROTATION')
             
-            # Non avanziamo finché non siamo orientati correttamente
             target_vx = 0.0 
             
-            # Calcolo della velocità di rotazione verso i 180° (prende sempre il verso più breve)
             target_wz = self.kp_yaw * yaw_err * self.angle_sign
             target_wz = max(-self.max_wz, min(self.max_wz, target_wz))
             
-            # Correzione Y per centrare il tag
             if abs(y_pos_mm) <= 1.0:
                 vy_correction = 0.0
             else:
                 vy_correction = self.y_sign * self.kp_y * y_pos_mm
                 vy_correction = max(-self.max_vy, min(self.max_vy, vy_correction))
 
-            # COMPENSAZIONE CINEMATICA FONDAMENTALE: 
-            # Poiché il sensore è a +0.437m, ruotando sul posto la testa descriverebbe un arco perdendo il tag.
-            # Sottraiamo l'effetto geometrico della rotazione per tenere il sensore incollato al nastro!
+            # COMPENSAZIONE CINEMATICA
             target_vy = vy_correction - (target_wz * self.sensor_offset_x)
             target_vy = max(-self.max_vy, min(self.max_vy, target_vy))
 
-        # FASE 2: LOGICA OLD-BUT-GOLD PURISSIMA (Siamo allineati a 180° ± delta)
+        # FASE 2: Allineamento completato, avanzamento verso il target
         else:
             self.publish_status('DOCKING_TRANSLATION')
             
-            # 1. RETROMARCIA X (Indietreggia in modo continuo come nel tuo codice originale)
+            # 1. RETROMARCIA X
             err_x = scan.x_pos - self.x_stop_mm
             target_vx_mag = self.kp_x * err_x
             target_vx_mag = max(0.02, min(self.max_vx, target_vx_mag))
             target_vx = -target_vx_mag if self.reverse_docking else target_vx_mag
 
-            # 2. TRASLAZIONE LATERALE Y (Usa il tuo y_sign originario)
+            # 2. TRASLAZIONE LATERALE Y
             if abs(y_pos_mm) <= 1.0:
                 target_vy = 0.0
             else:
                 target_vy = self.y_sign * self.kp_y * y_pos_mm
                 target_vy = max(-self.max_vy, min(self.max_vy, target_vy))
 
-            # 3. ROTAZIONE Z: Mantenuta a zero o micro-corretta se si scosta leggermente
+            # 3. ROTAZIONE Z
             target_wz = 0.0 
 
         # 4. RAMPA DI ACCELERAZIONE (Slew Rate)
@@ -317,7 +348,6 @@ class PgvFloorDockNode(Node):
         twist.linear.y = self.curr_vy
         twist.angular.z = self.curr_wz
         self.cmd_pub.publish(twist)
-
 
     def request_nav_cancel(self):
         if self.cancel_requested:

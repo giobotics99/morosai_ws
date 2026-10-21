@@ -146,14 +146,14 @@ def generate_launch_description():
             parameters=[{
                 'timeout_sec': 3.0
             }]
-        ),
-
-        Node(
-            package='realsense_t265_bridge',
-            executable='realsense_t265_node',
-            name='realsense_t265_node',
-            output='screen',
-            respawn=True
         )
+
+        # Node(
+        #     package='realsense_t265_bridge',
+        #     executable='realsense_t265_node',
+        #     name='realsense_t265_node',
+        #     output='screen',
+        #     respawn=True
+        # )
 
     ])

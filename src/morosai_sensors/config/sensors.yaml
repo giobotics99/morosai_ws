@@ -2,7 +2,7 @@ tof_camera:
   node_name: tof_camera_node
   namespace: tof
   frame_id: tof_link
-  serial_number: "303000c"
+  serial_number: "303002d"
   vertical_flip: false  # Camera mounted upright: node applies 180° correction
 
 optical_head:

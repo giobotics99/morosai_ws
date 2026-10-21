@@ -122,7 +122,7 @@ def generate_launch_description():
     amcl = LifecycleNode(package='nav2_amcl', executable='amcl', name='amcl', **nav2_node_config)
     controller_server = LifecycleNode(package='nav2_controller', executable='controller_server', name='controller_server', remappings=[('cmd_vel', 'cmd_vel_raw')], **nav2_node_config)
     planner_server = LifecycleNode(package='nav2_planner', executable='planner_server', name='planner_server', **nav2_node_config)
-    behavior_server = LifecycleNode(package='nav2_behaviors', executable='behavior_server', name='behavior_server', **nav2_node_config)
+    behavior_server = LifecycleNode(package='nav2_behaviors', executable='behavior_server', name='behavior_server', remappings=[('cmd_vel', 'cmd_vel_nav')], **nav2_node_config)
     bt_navigator = LifecycleNode(package='nav2_bt_navigator', executable='bt_navigator', name='bt_navigator', **nav2_node_config)
     waypoint_follower = LifecycleNode(package='nav2_waypoint_follower', executable='waypoint_follower', name='waypoint_follower', **nav2_node_config)
     
@@ -239,7 +239,7 @@ def generate_launch_description():
         output='screen',
         respawn=True,
         condition=IfCondition(use_rviz)
-    ),
+    )
 
     jetson_shutdown_node = Node(
         package='morosai_navigation',  # Nome del tuo pacchetto ROS 2
